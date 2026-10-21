@@ -388,6 +388,9 @@
     --md-link: #0969da;
     color: #1f2328;
     font-size: 11pt;
+    /* Keep code block, table and alert backgrounds, which WebKit drops when printing. */
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
   }
 
   .markdown .shiki,

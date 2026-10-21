@@ -1,5 +1,6 @@
 mod commands;
 mod documents;
+mod export;
 mod menu;
 mod platform;
 mod settings;
@@ -47,6 +48,8 @@ pub fn run() {
             commands::show_open_dialog,
             commands::open_external_file,
             commands::copy_text,
+            commands::copy_rich,
+            commands::export_html,
             commands::get_settings,
             commands::set_settings,
             commands::get_recent,

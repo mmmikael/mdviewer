@@ -7,6 +7,7 @@
     "beforeDevCommand": "pnpm dev",
     "devUrl": "http://localhost:1420",
     "beforeBuildCommand": "pnpm build",
+    "beforeBundleCommand": "bash quicklook/build.sh",
     "frontendDist": "../dist"
   },
   "app": {
@@ -31,7 +32,10 @@
   },
   "bundle": {
     "active": true,
-    "targets": ["app", "dmg"],
+    "targets": [
+      "app",
+      "dmg"
+    ],
     "category": "Productivity",
     "shortDescription": "A small Markdown viewer",
     "copyright": "© 2026 Mikael Rousson",
@@ -40,22 +44,43 @@
     },
     "fileAssociations": [
       {
-        "ext": ["md", "markdown", "mdown", "mkd", "mkdn", "mdwn"],
-        "contentTypes": ["net.daringfireball.markdown"],
+        "ext": [
+          "md",
+          "markdown",
+          "mdown",
+          "mkd",
+          "mkdn",
+          "mdwn"
+        ],
+        "contentTypes": [
+          "net.daringfireball.markdown"
+        ],
         "name": "Markdown Document",
         "description": "Markdown Document",
         "role": "Viewer",
         "rank": "Default"
       },
       {
-        "ext": ["md", "markdown", "mdown", "mkd", "mkdn", "mdwn", "mdx"],
+        "ext": [
+          "md",
+          "markdown",
+          "mdown",
+          "mkd",
+          "mkdn",
+          "mdwn",
+          "mdx"
+        ],
         "name": "Markdown File",
         "role": "Viewer",
         "rank": "Default"
       }
     ],
     "macOS": {
-      "minimumSystemVersion": "13.0"
+      "minimumSystemVersion": "13.0",
+      "signingIdentity": "-",
+      "files": {
+        "PlugIns/MDViewerQuickLook.appex": "target/quicklook/MDViewerQuickLook.appex"
+      }
     },
     "icon": [
       "icons/32x32.png",

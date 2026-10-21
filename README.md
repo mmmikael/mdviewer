@@ -6,7 +6,9 @@ A small, native-feeling Markdown viewer for macOS, built with [Tauri 2](https://
 - GitHub-flavoured Markdown: tables, task lists, footnotes, alerts, front matter, syntax highlighting (Shiki), Mermaid diagrams, KaTeX math, local and remote images
 - Live reload when the file changes on disk, keeping the scroll position
 - Native window chrome: translucent sidebar with table of contents, inset traffic lights, macOS menus and shortcuts, native window tabs, light/dark mode
-- Find in page, zoom, back/forward between linked documents, print, Settings window
+- Find in page, zoom, back/forward between linked documents, Settings window; hovering a link shows where it goes, like Safari
+- Export as PDF or as a self-contained HTML file, print, and Copy as Rich Text for pasting into Mail, Docs or Slack
+- Quick Look: press space on a `.md` file in Finder to preview it with the same rendering
 
 ## Install
 
@@ -43,6 +45,14 @@ Open a file at startup: `pnpm tauri dev -- -- "$PWD/tests/fixtures/rich.md"`. Fr
 
 Build output: `src-tauri/target/release/bundle/` (about 8 MB app, 6 MB DMG).
 
+## Quick Look extension
+
+`quicklook/` holds a small Quick Look preview extension (Swift, no Xcode project). `quicklook/build.sh` builds the preview page from `src/quicklook/` (the app's Markdown pipeline with a bundled subset of languages; Mermaid's single-file build is shipped next to it and loaded only for documents with diagrams), compiles the extension and signs it; `tauri build` runs it before bundling and copies the result into `MDViewer.app/Contents/PlugIns`. To try a build's extension without installing it:
+
+```bash
+qlmanage -p tests/fixtures/rich.md
+```
+
 ## Project layout
 
 ```
@@ -50,7 +60,9 @@ src/                       Web UI (Svelte 5 + TypeScript)
   DocumentWindow.svelte    Document window: rendering, links, find, zoom, history
   SettingsWindow.svelte    Settings window
   lib/markdown/            markdown-it setup, Shiki, Mermaid, sanitising + DOM post-processing
+  lib/export.ts            Standalone HTML export and rich-text clipboard HTML
   lib/ipc.ts               Typed wrappers for Rust commands and events
+  quicklook/               Quick Look preview page (main.ts, bundled language subset)
   dev/mockTauri.ts         IPC mocks for running the UI in a browser
 src-tauri/src/
   lib.rs                   App setup and lifecycle (Finder opens, Dock reopen, window events)
@@ -58,7 +70,9 @@ src-tauri/src/
   watcher.rs               File watching (watches the folder, so atomic saves work)
   menu.rs                  Menu bar, Open Recent, menu actions
   settings.rs              Settings and recent files (store plugin)
+  export.rs                Export as PDF (WebKit print to file), save panel, rich-text clipboard
   platform.rs              AppKit bits: Dock recents, clipboard, traffic light position
+quicklook/                 Quick Look extension: Swift controller, Info.plist, build script
 tests/                     Vitest tests and Markdown fixtures
 ```
 

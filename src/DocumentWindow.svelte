@@ -15,12 +15,14 @@
   import EmptyState from "./components/EmptyState.svelte";
   import FindBar from "./components/FindBar.svelte";
   import Sidebar from "./components/Sidebar.svelte";
+  import { clipboardHtml, standaloneHtml } from "./lib/export";
   import { Finder } from "./lib/find";
   import { DEFAULT_SETTINGS, ipc, on, type Doc, type MenuAction, type Settings } from "./lib/ipc";
   import { prepareHighlighting } from "./lib/markdown/highlight";
   import { renderDiagrams } from "./lib/markdown/mermaid";
   import { buildFragment } from "./lib/markdown/postprocess";
   import { renderMarkdown } from "./lib/markdown/render";
+  import { linkStatus } from "./lib/linkStatus";
   import { basename, isMarkdownPath } from "./lib/paths";
   import { activeHeading, extractHeadings, type Heading } from "./lib/toc";
 
@@ -40,6 +42,9 @@
   let loadError = $state<string | null>(null);
   let missing = $state(false);
   let toast = $state<string | null>(null);
+  /** Destination of the hovered link, shown bottom-left like Safari. */
+  let linkHover = $state<string | null>(null);
+  let hoveredLink: HTMLAnchorElement | null = null;
   let headings = $state<Heading[]>([]);
   let active = $state<string | null>(null);
   let scrolled = $state(false);
@@ -100,6 +105,7 @@
     if (token !== renderToken) return;
 
     if (mode === "replace") {
+      showLinkStatus(null, false);
       article.replaceChildren(fragment);
       scroller.scrollTop = scrollTop;
       if (hash) scrollToId(hash, false);
@@ -194,6 +200,30 @@
       button.textContent = "Copy";
       button.classList.remove("copied");
     }, 1200);
+  }
+
+  function showLinkStatus(link: HTMLAnchorElement | null, newWindow: boolean) {
+    hoveredLink = link;
+    linkHover =
+      link && doc
+        ? linkStatus(
+            {
+              kind: link.dataset.link,
+              href: link.getAttribute("href") ?? "",
+              path: link.dataset.path,
+              hash: link.dataset.hash,
+            },
+            doc.path,
+            newWindow,
+          )
+        : null;
+  }
+
+  function onArticleMouseMove(event: MouseEvent) {
+    const link = (event.target as Element).closest<HTMLAnchorElement>("a[href]");
+    if (link !== hoveredLink || (link && event.metaKey !== linkHover?.startsWith("Open “"))) {
+      showLinkStatus(link, event.metaKey);
+    }
   }
 
   function onArticleClick(event: MouseEvent) {
@@ -314,6 +344,34 @@
     if (next) void setZoom(next);
   }
 
+  async function exportHtml() {
+    if (!doc) return;
+    try {
+      const html = await standaloneHtml(article, doc.name.replace(/\.[^.]+$/, ""));
+      const saved = await ipc.exportHtml(html);
+      if (saved) showToast(`Exported “${basename(saved)}”`);
+    } catch (error) {
+      showToast(String(error));
+    }
+  }
+
+  /** Copies the selection, or the whole document when nothing is selected. */
+  async function copyRich() {
+    if (!doc) return;
+    const selection = window.getSelection();
+    const range =
+      selection && !selection.isCollapsed && article.contains(selection.anchorNode)
+        ? selection.getRangeAt(0)
+        : null;
+    try {
+      const html = await clipboardHtml(range ? range.cloneContents() : article);
+      await ipc.copyRich(html, range ? selection!.toString() : doc.content);
+      showToast(range ? "Copied the selection as rich text" : "Copied the document as rich text");
+    } catch (error) {
+      showToast(String(error));
+    }
+  }
+
   function onMenuAction(action: MenuAction) {
     switch (action) {
       case "find":
@@ -346,6 +404,12 @@
       case "zoom-out":
         stepZoom(-1);
         break;
+      case "export-html":
+        void exportHtml();
+        break;
+      case "copy-rich":
+        void copyRich();
+        break;
     }
   }
 
@@ -371,7 +435,12 @@
     toastTimer = setTimeout(() => (toast = null), 3500);
   }
 
+  function onKeyup(event: KeyboardEvent) {
+    if (event.key === "Meta" && hoveredLink) showLinkStatus(hoveredLink, false);
+  }
+
   function onKeydown(event: KeyboardEvent) {
+    if (event.key === "Meta" && hoveredLink) showLinkStatus(hoveredLink, true);
     if (event.key === "Escape" && findOpen) {
       event.preventDefault();
       closeFind();
@@ -409,6 +478,8 @@
       }),
       on("doc:missing", () => (missing = true)),
       on("menu:action", onMenuAction),
+      on("export:done", (path) => showToast(`Exported “${basename(path)}”`)),
+      on("export:failed", (message) => showToast(message)),
       on("settings:changed", onSettingsChanged),
       on("recent:changed", async () => {
         if (!doc) recent = await ipc.getRecent();
@@ -436,7 +507,7 @@
   });
 </script>
 
-<svelte:window oncontextmenu={onContextMenu} onkeydown={onKeydown} />
+<svelte:window oncontextmenu={onContextMenu} onkeydown={onKeydown} onkeyup={onKeyup} />
 
 <div
   class="window"
@@ -482,8 +553,18 @@
 
     <div class="scroller" bind:this={scroller} hidden={!doc} tabindex="-1" onscroll={onScroll}>
       <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_noninteractive_element_interactions -->
-      <article class="markdown" bind:this={article} onclick={onArticleClick}></article>
+      <article
+        class="markdown"
+        bind:this={article}
+        onclick={onArticleClick}
+        onmousemove={onArticleMouseMove}
+        onmouseleave={() => showLinkStatus(null, false)}
+      ></article>
     </div>
+
+    {#if linkHover}
+      <div class="link-status" aria-hidden="true">{linkHover}</div>
+    {/if}
 
     {#if !doc}
       <EmptyState
@@ -529,6 +610,7 @@
   }
 
   .pane {
+    position: relative;
     flex: 1;
     min-width: 0;
     display: flex;
@@ -622,6 +704,25 @@
     pointer-events: none;
   }
 
+  /* Safari-style link preview in the bottom-left corner of the document. */
+  .link-status {
+    position: absolute;
+    left: 6px;
+    bottom: 6px;
+    max-width: min(60%, 640px);
+    padding: 3px 8px;
+    border: 0.5px solid var(--hairline);
+    border-radius: 6px;
+    background: var(--control-bg);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+    font-size: 11px;
+    color: var(--text-secondary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    pointer-events: none;
+  }
+
   .toast {
     position: absolute;
     left: 50%;
@@ -639,12 +740,14 @@
     .toolbar,
     .banner,
     .sidebar-toggle,
+    .link-status,
     .toast {
       display: none !important;
     }
 
     .window,
     .pane,
+    .with-sidebar .pane,
     .scroller {
       display: block;
       height: auto;

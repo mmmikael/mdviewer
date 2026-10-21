@@ -1,9 +1,8 @@
 // Mermaid diagrams. The library is large, so it is only loaded when a document
 // contains a diagram. Results are cached so live reloads don't flicker.
 
+import { loadMermaid, type Mermaid } from "./mermaidLoader";
 import { escapeHtml } from "./render";
-
-type Mermaid = (typeof import("mermaid"))["default"];
 
 let mermaid: Mermaid | null = null;
 let initializedFor: "light" | "dark" | null = null;
@@ -11,7 +10,7 @@ let counter = 0;
 const cache = new Map<string, string>();
 
 async function load(theme: "light" | "dark"): Promise<Mermaid> {
-  mermaid ??= (await import("mermaid")).default;
+  mermaid ??= await loadMermaid();
   if (initializedFor !== theme) {
     mermaid.initialize({
       startOnLoad: false,

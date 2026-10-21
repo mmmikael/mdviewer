@@ -26,6 +26,10 @@ jobs:
       - run: pnpm lint
       - run: pnpm test
       - run: cargo test --manifest-path src-tauri/Cargo.toml
+      - name: Build the Quick Look extension
+        run: |
+          bash quicklook/build.sh
+          lipo -archs src-tauri/target/quicklook/MDViewerQuickLook.appex/Contents/MacOS/MDViewerQuickLook
 
   release:
     # Tags like v0.2.0 build a universal (Apple silicon + Intel) DMG and attach it

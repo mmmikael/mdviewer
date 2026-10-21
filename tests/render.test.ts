@@ -83,6 +83,11 @@ describe("buildFragment", () => {
     expect(root.querySelector("a")!.getAttribute("href")).toBeNull();
   });
 
+  it("keeps KaTeX's TeX annotation", () => {
+    const root = toElement("$x^2$");
+    expect(root.querySelector("annotation[encoding='application/x-tex']")?.textContent).toBe("x^2");
+  });
+
   it("points local images at the asset protocol", () => {
     const root = toElement("![a](img/a.png) ![b](https://example.com/b.png) ![c](data:image/png;base64,AA==)");
     const [local, remote, inline] = root.querySelectorAll("img");

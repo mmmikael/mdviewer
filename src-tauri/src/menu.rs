@@ -65,6 +65,8 @@ pub fn build(app: &AppHandle) -> tauri::Result<Menu<Wry>> {
     let reveal = item("reveal", "Reveal in Finder", Some("CmdOrCtrl+Shift+R"))?;
     let open_editor = item("open-editor", "Open in Editor", Some("CmdOrCtrl+E"))?;
     let copy_path = item("copy-path", "Copy File Path", Some("CmdOrCtrl+Alt+C"))?;
+    let export_pdf = item("export-pdf", "Export as PDF…", None)?;
+    let export_html = item("export-html", "Export as HTML…", None)?;
     let print = item("print", "Print…", Some("CmdOrCtrl+P"))?;
     let file_menu = Submenu::with_items(
         app,
@@ -80,10 +82,18 @@ pub fn build(app: &AppHandle) -> tauri::Result<Menu<Wry>> {
             &open_editor,
             &copy_path,
             &sep()?,
+            &export_pdf,
+            &export_html,
+            &sep()?,
             &print,
         ],
     )?;
 
+    let copy_rich = item(
+        "copy-rich",
+        "Copy as Rich Text",
+        Some("CmdOrCtrl+Alt+Shift+C"),
+    )?;
     let find = item("find", "Find…", Some("CmdOrCtrl+F"))?;
     let find_next = item("find-next", "Find Next", Some("CmdOrCtrl+G"))?;
     let find_prev = item("find-prev", "Find Previous", Some("CmdOrCtrl+Shift+G"))?;
@@ -98,6 +108,7 @@ pub fn build(app: &AppHandle) -> tauri::Result<Menu<Wry>> {
             &sep()?,
             &PredefinedMenuItem::cut(app, None)?,
             &PredefinedMenuItem::copy(app, None)?,
+            &copy_rich,
             &PredefinedMenuItem::paste(app, None)?,
             &PredefinedMenuItem::select_all(app, None)?,
             &sep()?,
@@ -171,6 +182,9 @@ pub fn build(app: &AppHandle) -> tauri::Result<Menu<Wry>> {
             reveal,
             open_editor,
             copy_path,
+            export_pdf,
+            export_html,
+            copy_rich,
             print,
             find,
             find_next,
@@ -282,6 +296,11 @@ pub fn handle(app: &AppHandle, event: MenuEvent) {
         "copy-path" => {
             if let Some(path) = focused_path {
                 let _ = platform::copy_to_clipboard(&path.to_string_lossy());
+            }
+        }
+        "export-pdf" => {
+            if let Some(window) = focused {
+                crate::export::export_pdf(app, window);
             }
         }
         "print" => {

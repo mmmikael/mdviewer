@@ -18,11 +18,30 @@ pub fn take_pending_open(window: WebviewWindow, docs: State<Documents>) -> Optio
 
 /// Called by the page once its first render is done, to avoid a blank flash.
 #[tauri::command]
-pub fn show_window(window: WebviewWindow) {
+pub fn show_window(app: AppHandle, window: WebviewWindow) {
     let _ = window.show();
     if documents::is_doc_window(window.label()) {
         crate::platform::position_traffic_lights(&window);
+        debug_export(&app, &window);
     }
+}
+
+/// With `MDV_DEBUG_EXPORT_DIR` set (debug builds only), every exporter runs once
+/// for each document window, so exports can be checked without clicking.
+fn debug_export(app: &AppHandle, window: &WebviewWindow) {
+    #[cfg(debug_assertions)]
+    {
+        use tauri::{Emitter, Manager};
+        if std::env::var_os("MDV_DEBUG_EXPORT_DIR").is_some()
+            && app.state::<Documents>().path_for(window.label()).is_some()
+        {
+            let _ = app.emit_to(window.label(), "menu:action", "export-html");
+            let _ = app.emit_to(window.label(), "menu:action", "copy-rich");
+            crate::export::export_pdf(app, window.clone());
+        }
+    }
+    #[cfg(not(debug_assertions))]
+    let _ = (app, window);
 }
 
 /// Loads a file into the calling window and starts watching it.
@@ -86,6 +105,28 @@ pub fn open_external_file(app: AppHandle, path: PathBuf) -> Result<(), String> {
     app.opener()
         .open_path(path.to_string_lossy(), None::<&str>)
         .map_err(|e| e.to_string())
+}
+
+/// File ▸ Export as HTML…: the page builds a standalone HTML file, this asks
+/// where to save it. Returns the saved path, or nothing if cancelled.
+#[tauri::command]
+pub async fn export_html(
+    app: AppHandle,
+    window: WebviewWindow,
+    html: String,
+) -> Result<Option<PathBuf>, String> {
+    let name = crate::export::default_name(&app, &window, "html");
+    let Some(path) = crate::export::pick_save_path(&app, &window, &name, "HTML", "html") else {
+        return Ok(None);
+    };
+    std::fs::write(&path, html).map_err(|e| format!("Couldn’t save “{name}”: {e}"))?;
+    Ok(Some(path))
+}
+
+/// Edit ▸ Copy as Rich Text: HTML for rich text editors plus a plain fallback.
+#[tauri::command]
+pub fn copy_rich(app: AppHandle, html: String, text: String) -> Result<(), String> {
+    crate::export::copy_rich(&app, html, text)
 }
 
 /// Clipboard writes from the page aren't reliable outside a click handler

@@ -21,7 +21,10 @@ export function sanitize(html: string): DocumentFragment {
   return DOMPurify.sanitize(html, {
     RETURN_DOM_FRAGMENT: true,
     FORBID_TAGS: ["style", "form", "button", "textarea", "select"],
-    ADD_ATTR: ["data-lang"],
+    // KaTeX keeps the TeX source in MathML <semantics>/<annotation>, used by
+    // screen readers and by Copy as Rich Text.
+    ADD_TAGS: ["semantics", "annotation"],
+    ADD_ATTR: ["data-lang", "encoding"],
   });
 }
 
@@ -78,7 +81,6 @@ export function classifyLinks(root: ParentNode, baseDir: string): void {
       link.dataset.hash = href.slice(1);
     } else if (EXTERNAL_SCHEMES.test(href)) {
       link.dataset.link = "external";
-      link.title ||= href;
     } else if (!hasScheme(href) || /^file:/i.test(href)) {
       const [path, hash] = splitHash(href);
       link.dataset.link = "file";

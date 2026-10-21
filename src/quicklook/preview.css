@@ -1,0 +1,48 @@
+/* Page around the document in the Quick Look preview. */
+
+:root {
+  color-scheme: light dark;
+  --text: #1f2328;
+  --content-bg: #ffffff;
+  --accent: #0969da;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --text: #e8e8ed;
+    --content-bg: #1e1e1e;
+    --accent: #4493f8;
+  }
+}
+
+html {
+  background: var(--content-bg);
+}
+
+body {
+  margin: 0;
+}
+
+.markdown {
+  max-width: 52em;
+  margin: 0 auto;
+  padding: 28px 32px 48px;
+}
+
+/* Links can't be followed from a preview. */
+.markdown a {
+  cursor: default;
+}
+
+.markdown .copy-button {
+  display: none;
+}
+
+.markdown .image-placeholder {
+  display: inline-block;
+  padding: 2px 8px;
+  border: 1px dashed var(--md-border);
+  border-radius: 6px;
+  color: var(--md-muted);
+  font-size: 0.85em;
+}

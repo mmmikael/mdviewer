@@ -51,7 +51,9 @@ export type MenuAction =
   | "toggle-sidebar"
   | "zoom-reset"
   | "zoom-in"
-  | "zoom-out";
+  | "zoom-out"
+  | "export-html"
+  | "copy-rich";
 
 export interface Events {
   /** A file was assigned to this window; fetch it with `takePendingOpen`. */
@@ -61,6 +63,9 @@ export interface Events {
   "menu:action": MenuAction;
   "settings:changed": Settings;
   "recent:changed": null;
+  /** A PDF export finished; the payload is the saved file. */
+  "export:done": string;
+  "export:failed": string;
 }
 
 export const ipc = {
@@ -72,6 +77,9 @@ export const ipc = {
   showOpenDialog: () => invoke<void>("show_open_dialog"),
   openExternalFile: (path: string) => invoke<void>("open_external_file", { path }),
   copyText: (text: string) => invoke<void>("copy_text", { text }),
+  copyRich: (html: string, text: string) => invoke<void>("copy_rich", { html, text }),
+  /** Asks where to save, then writes the file. Resolves to the path, or null if cancelled. */
+  exportHtml: (html: string) => invoke<string | null>("export_html", { html }),
   getSettings: () => invoke<Settings>("get_settings"),
   setSettings: (settings: Settings) => invoke<void>("set_settings", { settings }),
   getRecent: () => invoke<string[]>("get_recent"),

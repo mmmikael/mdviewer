@@ -28,7 +28,20 @@ Each file opens in its own window. To get tabs instead, set **System Settings �
 | Reveal in Finder | ⇧⌘R |
 | Open in Editor | ⌘E |
 | Copy file path | ⌥⌘C |
+| Copy as rich text | ⌥⇧⌘C |
 | Print | ⌘P |
+
+## Sharing a document
+
+- **File ▸ Export as PDF…** saves a paginated PDF, laid out like a printout.
+- **File ▸ Export as HTML…** saves a single web page with everything embedded (styles, math fonts, diagrams, images), so it opens anywhere, even offline.
+- **Edit ▸ Copy as Rich Text** copies the selection, or the whole document when nothing is selected, so it pastes with its formatting into Mail, Pages, Google Docs or Slack. Math is pasted as TeX.
+
+Hover over a link to see where it goes in the bottom-left corner of the window. Hold ⌘ to open it in a new window.
+
+## Quick Look
+
+Select a Markdown file in Finder and press the space bar to preview it with MDViewer's rendering, diagrams and math included. Quick Look can only read the file itself, so images next to it are shown as their description.
 
 ## What gets rendered
 

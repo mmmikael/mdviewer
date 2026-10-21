@@ -62,6 +62,12 @@ export function installMocks() {
           recent = [];
           void emit("recent:changed", null);
           return null;
+        case "export_html":
+          (window as unknown as { mdvLastExport: unknown }).mdvLastExport = a.html;
+          return `${DIR}/${current?.slice(DIR.length + 1).replace(/\.[^.]+$/, "")}.html`;
+        case "copy_rich":
+          (window as unknown as { mdvLastClipboard: unknown }).mdvLastClipboard = { html: a.html, text: a.text };
+          return null;
         case "get_default_viewer":
           return { isDefault, currentApp: isDefault ? "MDViewer" : "Xcode", canChange: true };
         case "make_default_viewer":
