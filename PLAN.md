@@ -108,7 +108,7 @@ Each phase ends with something runnable. Rough sizes assume one developer workin
 
 ### Phase 0 — Scaffold and tooling (½ day)
 
-1. `pnpm create tauri-app` → template **svelte-ts**, identifier e.g. `com.mmmikael.mdviewer`, product name `MDViewer`.
+1. `pnpm create tauri-app` → template **svelte-ts**, identifier `com.mmmikael.mdviewer`, product name `MDViewer`.
 2. `git init`, `.gitignore` (target/, node_modules/, dist/).
 3. Add Rust plugins: `tauri-plugin-dialog`, `tauri-plugin-opener`, `tauri-plugin-store`, `tauri-plugin-window-state`. Rust crates: `notify`, `notify-debouncer-full`, `serde`, `anyhow`/`thiserror`.
 4. Add JS deps: `@tauri-apps/api`, plugin JS packages, `markdown-it` + plugins, `dompurify`, `shiki`, `mermaid`, `katex`, `github-markdown-css` (as a starting point).
@@ -298,7 +298,7 @@ Total: roughly 8–10 working days for one developer, less with heavy AI assista
 
 ## 12. Decisions needed before starting
 
-1. Bundle identifier and app name (proposed: `com.mmmikael.mdviewer`, "MDViewer").
-2. Svelte vs React for the UI (plan assumes Svelte 5).
+1. ~~Bundle identifier and app name~~ `com.mmmikael.mdviewer`, "MDViewer".
+2. ~~Svelte vs React for the UI~~ Svelte 5.
 3. Who will own the Apple Developer ID certificate for signing and notarization?
 4. ~~Should MDViewer offer to become the default app for `.md` files?~~ Yes: Settings ▸ Make Default.

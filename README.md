@@ -8,6 +8,15 @@ A small, native-feeling Markdown viewer for macOS, built with [Tauri 2](https://
 - Native window chrome: translucent sidebar with table of contents, inset traffic lights, macOS menus and shortcuts, native window tabs, light/dark mode
 - Find in page, zoom, back/forward between linked documents, print, Settings window
 
+## Install
+
+Requires macOS 13 or later; one download works on both Apple silicon and Intel Macs.
+
+1. Download the `.dmg` from the [latest release](https://github.com/mmmikael/mdviewer/releases/latest).
+2. Open it and drag **MDViewer** to **Applications**.
+3. Open MDViewer. Releases aren't notarised by Apple yet, so the first time macOS blocks it: go to **System Settings ▸ Privacy & Security**, scroll down and click **Open Anyway**. You only need to do this once.
+4. To open Markdown files with MDViewer when you double-click them, choose **MDViewer ▸ Settings…** and click **Make Default**.
+
 ## Development
 
 Requirements: Rust (1.89+), Node 22+, pnpm, Xcode command line tools.
