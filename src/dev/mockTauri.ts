@@ -31,6 +31,7 @@ export function installMocks() {
   let settings: Settings = { ...DEFAULT_SETTINGS };
   let current: string | null = null;
   let isDefault = false;
+  let recent = [...Object.keys(files), "/elsewhere/notes.md", "/elsewhere/todo.md"];
 
   mockWindows(params.get("window") ?? "doc-1");
   mockConvertFileSrc("macos");
@@ -52,7 +53,15 @@ export function installMocks() {
           void emit("settings:changed", settings);
           return null;
         case "get_recent":
-          return Object.keys(files);
+          return recent;
+        case "remove_recent":
+          recent = recent.filter((path) => path !== a.path);
+          void emit("recent:changed", null);
+          return null;
+        case "clear_recent":
+          recent = [];
+          void emit("recent:changed", null);
+          return null;
         case "get_default_viewer":
           return { isDefault, currentApp: isDefault ? "MDViewer" : "Xcode", canChange: true };
         case "make_default_viewer":

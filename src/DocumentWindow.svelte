@@ -355,6 +355,16 @@
     if (rerender && doc) void render(doc.content, "update");
   }
 
+  /** Runs a change to the recent list, then shows the list as stored. */
+  async function updateRecent(change: Promise<void>) {
+    try {
+      await change;
+    } catch (error) {
+      showToast(String(error));
+    }
+    recent = await ipc.getRecent().catch(() => recent);
+  }
+
   function showToast(message: string) {
     toast = message;
     clearTimeout(toastTimer);
@@ -481,6 +491,8 @@
         error={loadError}
         onopen={() => void ipc.showOpenDialog()}
         onopenrecent={(path) => void load(path)}
+        onremoverecent={(path) => void updateRecent(ipc.removeRecent(path))}
+        onclearrecent={() => void updateRecent(ipc.clearRecent())}
       />
     {/if}
   </main>

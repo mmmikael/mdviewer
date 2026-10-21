@@ -124,6 +124,18 @@ pub fn get_recent(app: AppHandle) -> Vec<PathBuf> {
     settings::recent(&app)
 }
 
+/// Removes one file from the recent list (and File ▸ Open Recent).
+#[tauri::command]
+pub fn remove_recent(app: AppHandle, path: PathBuf) {
+    settings::remove_recent(&app, &path);
+}
+
+/// Clears the whole recent list, like File ▸ Open Recent ▸ Clear Menu.
+#[tauri::command]
+pub fn clear_recent(app: AppHandle) {
+    settings::clear_recent(&app);
+}
+
 #[tauri::command]
 pub fn show_settings(app: AppHandle) {
     documents::show_settings_window(&app);

@@ -9,6 +9,7 @@ MDViewer shows Markdown files and keeps them up to date while you edit them in a
 
 - Double-click a Markdown file in Finder (once MDViewer is set as its app), or drop it on the Dock icon.
 - **File ▸ Open…** (⌘O), or **File ▸ Open Recent**.
+- To tidy up the recent files, use **File ▸ Open Recent ▸ Clear Menu**, or in the start window hover over a file and click **×** (or click **Clear** to remove them all).
 - Drag files onto any MDViewer window.
 - From Terminal: `open -a MDViewer README.md`.
 

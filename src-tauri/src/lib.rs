@@ -50,6 +50,8 @@ pub fn run() {
             commands::get_settings,
             commands::set_settings,
             commands::get_recent,
+            commands::remove_recent,
+            commands::clear_recent,
             commands::show_settings,
             commands::choose_editor_app,
             commands::get_default_viewer,

@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { Menu } from "@tauri-apps/api/menu";
+
   import { basename, dirname } from "../lib/paths";
 
   let {
@@ -6,12 +8,29 @@
     error,
     onopen,
     onopenrecent,
+    onremoverecent,
+    onclearrecent,
   }: {
     recent: string[];
     error: string | null;
     onopen: () => void;
     onopenrecent: (path: string) => void;
+    onremoverecent: (path: string) => void;
+    onclearrecent: () => void;
   } = $props();
+
+  async function showRowMenu(event: MouseEvent, path: string) {
+    event.preventDefault();
+    const menu = await Menu.new({
+      items: [
+        { id: "open", text: "Open", action: () => onopenrecent(path) },
+        { id: "remove", text: "Remove from Recent", action: () => onremoverecent(path) },
+        { item: "Separator" },
+        { id: "clear", text: "Clear Recent", action: onclearrecent },
+      ],
+    });
+    await menu.popup();
+  }
 </script>
 
 <div class="empty-state">
@@ -29,13 +48,27 @@
 
   {#if recent.length}
     <div class="recent">
-      <div class="recent-title">Recent</div>
+      <div class="recent-header">
+        <span class="recent-title">Recent</span>
+        <button type="button" class="clear" onclick={onclearrecent}>Clear</button>
+      </div>
       <ul>
         {#each recent.slice(0, 8) as path (path)}
-          <li>
-            <button type="button" onclick={() => onopenrecent(path)} title={path}>
+          <li oncontextmenu={(event) => void showRowMenu(event, path)}>
+            <button type="button" class="open" onclick={() => onopenrecent(path)} title={path}>
               <span class="name">{basename(path)}</span>
               <span class="folder">{basename(dirname(path))}</span>
+            </button>
+            <button
+              type="button"
+              class="remove"
+              onclick={() => onremoverecent(path)}
+              title="Remove from Recent"
+              aria-label="Remove {basename(path)} from Recent"
+            >
+              <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true">
+                <path d="M2 2l6 6M8 2 2 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+              </svg>
             </button>
           </li>
         {/each}
@@ -83,11 +116,29 @@
     text-align: left;
   }
 
+  .recent-header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    padding: 0 8px 4px;
+  }
+
   .recent-title {
     font-size: 11px;
     font-weight: 600;
     color: var(--text-tertiary);
-    padding: 0 8px 4px;
+  }
+
+  .clear {
+    border: 0;
+    background: transparent;
+    padding: 0;
+    font-size: 11px;
+    color: var(--text-secondary);
+  }
+
+  .clear:hover {
+    color: var(--text);
   }
 
   ul {
@@ -96,20 +147,26 @@
     padding: 0;
   }
 
-  li button {
-    width: 100%;
+  li {
+    display: flex;
+    align-items: center;
+    border-radius: 6px;
+  }
+
+  li:hover {
+    background: var(--hover);
+  }
+
+  .open {
+    flex: 1;
+    min-width: 0;
     display: flex;
     justify-content: space-between;
     gap: 12px;
     border: 0;
     background: transparent;
-    padding: 5px 8px;
-    border-radius: 6px;
+    padding: 5px 4px 5px 8px;
     text-align: left;
-  }
-
-  li button:hover {
-    background: var(--hover);
   }
 
   .name {
@@ -125,5 +182,30 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+  }
+
+  /* Shown on hover, like the close button on a Safari tab. */
+  .remove {
+    flex: none;
+    display: grid;
+    place-items: center;
+    width: 18px;
+    height: 18px;
+    margin-right: 4px;
+    border: 0;
+    border-radius: 4px;
+    background: transparent;
+    color: var(--text-secondary);
+    opacity: 0;
+  }
+
+  li:hover .remove,
+  .remove:focus-visible {
+    opacity: 1;
+  }
+
+  .remove:hover {
+    background: var(--selected);
+    color: var(--text);
   }
 </style>
