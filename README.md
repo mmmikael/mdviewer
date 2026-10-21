@@ -64,3 +64,7 @@ tests/                     Vitest tests and Markdown fixtures
 Signing and notarisation need an Apple Developer ID certificate. Locally, set `APPLE_SIGNING_IDENTITY` plus either `APPLE_ID`/`APPLE_PASSWORD`/`APPLE_TEAM_ID` or an App Store Connect API key before `pnpm tauri:build`. In CI, pushing a `v*` tag runs `.github/workflows/build.yml`, which builds a universal DMG and attaches it to a draft GitHub release; it expects the secrets listed in that file.
 
 Unsigned builds work on the machine that built them; other Macs will show a Gatekeeper warning.
+
+## License
+
+[MIT](LICENSE)
