@@ -74,6 +74,13 @@ impl Documents {
         inner.pending.remove(label);
     }
 
+    /// Assigns `path` to an existing window that will load it via `take_pending`.
+    pub fn claim(&self, label: &str, path: PathBuf) {
+        let mut inner = self.0.lock().unwrap();
+        inner.open.insert(label.to_string(), path.clone());
+        inner.pending.insert(label.to_string(), path);
+    }
+
     pub fn take_pending(&self, label: &str) -> Option<PathBuf> {
         self.0.lock().unwrap().pending.remove(label)
     }
@@ -154,8 +161,10 @@ pub fn open_paths(app: &AppHandle, paths: Vec<PathBuf>, prefer: Option<&str>) {
         }
         if let Some(window) = empty_window(app, prefer) {
             // Claim the window now so the next path in this batch doesn't reuse it.
-            docs.set(window.label(), path.clone());
-            let _ = app.emit_to(window.label(), "doc:open", &path);
+            // The page may still be starting up and not listening yet, so leave the
+            // file as pending too; the page takes it on start or on `doc:open`.
+            docs.claim(window.label(), path);
+            let _ = app.emit_to(window.label(), "doc:open", ());
             focus(&window);
             continue;
         }
@@ -297,7 +306,7 @@ pub fn show_settings_window(app: &AppHandle) {
     let builder =
         WebviewWindowBuilder::new(app, SETTINGS_LABEL, WebviewUrl::App("index.html".into()))
             .title("Settings")
-            .inner_size(520.0, 340.0)
+            .inner_size(520.0, 400.0)
             .resizable(false)
             .minimizable(false)
             .maximizable(false)
@@ -351,6 +360,16 @@ mod tests {
             docs.label_for(Path::new("/tmp/a.md")).as_deref(),
             Some("doc-2")
         );
+    }
+
+    #[test]
+    fn claimed_window_is_open_and_pending_once() {
+        let docs = Documents::default();
+        let label = docs.reserve_window(None);
+        docs.claim(&label, "/tmp/b.md".into());
+        assert_eq!(docs.label_for(Path::new("/tmp/b.md")), Some(label.clone()));
+        assert_eq!(docs.take_pending(&label), Some("/tmp/b.md".into()));
+        assert_eq!(docs.take_pending(&label), None);
     }
 
     #[test]

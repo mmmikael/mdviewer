@@ -198,7 +198,7 @@ Web UI:
 **Open Recent:** keep the last 15 paths in the store plugin, rebuild the submenu when it changes, include "Clear Menu". Optionally also register files with `NSDocumentController.noteNewRecentDocumentURL` (via `objc2`) so they show in the Dock icon's menu; small but nice.
 
 **File associations** (`bundle.fileAssociations` in `tauri.conf.json`):
-- Extensions `md, markdown, mdown, mkd, mkdn`, role **Viewer**, rank Alternate (so we don't steal the default from editors unless the user chooses us).
+- Extensions `md, markdown, mdown, mkd, mkdn`, role **Viewer**, rank **Default**. Settings has a **Make Default** button that asks macOS to make MDViewer the handler for `net.daringfireball.markdown` (macOS never switches an existing default by itself).
 - Declare the standard UTI `net.daringfireball.markdown` (via `contentTypes` if available in the pinned Tauri version, otherwise in `src-tauri/Info.plist`, which Tauri merges into the bundle).
 - Note: Finder only learns about associations from a built `.app`; during development use `pnpm tauri build --debug` and run that bundle once.
 
@@ -301,4 +301,4 @@ Total: roughly 8–10 working days for one developer, less with heavy AI assista
 1. Bundle identifier and app name (proposed: `com.mmmikael.mdviewer`, "MDViewer").
 2. Svelte vs React for the UI (plan assumes Svelte 5).
 3. Who will own the Apple Developer ID certificate for signing and notarization?
-4. Should MDViewer offer to become the default app for `.md` files, or stay an "Open With" option?
+4. ~~Should MDViewer offer to become the default app for `.md` files?~~ Yes: Settings ▸ Make Default.

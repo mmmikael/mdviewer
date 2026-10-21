@@ -111,3 +111,102 @@ pub fn copy_to_clipboard(text: &str) -> std::io::Result<()> {
     child.wait()?;
     Ok(())
 }
+
+/// The content type macOS gives `.md` files.
+#[cfg(target_os = "macos")]
+const MARKDOWN_TYPE: &str = "net.daringfireball.markdown";
+
+#[derive(Clone, Debug, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DefaultViewer {
+    /// MDViewer already opens Markdown files on double-click.
+    pub is_default: bool,
+    /// The app that currently does, e.g. "Xcode".
+    pub current_app: Option<String>,
+    /// False when running unbundled (`tauri dev`), where macOS can't register us.
+    pub can_change: bool,
+}
+
+pub fn default_viewer() -> DefaultViewer {
+    #[cfg(target_os = "macos")]
+    {
+        use objc2_app_kit::NSWorkspace;
+        use objc2_foundation::NSBundle;
+
+        let ours = NSBundle::mainBundle().bundlePath().to_string();
+        let current = markdown_type()
+            .and_then(|t| NSWorkspace::sharedWorkspace().URLForApplicationToOpenContentType(&t))
+            .and_then(|url| url.path())
+            .map(|path| path.to_string());
+        DefaultViewer {
+            is_default: current.as_deref() == Some(ours.as_str()),
+            current_app: current.as_deref().map(app_name),
+            can_change: ours.ends_with(".app"),
+        }
+    }
+    #[cfg(not(target_os = "macos"))]
+    DefaultViewer {
+        is_default: false,
+        current_app: None,
+        can_change: false,
+    }
+}
+
+#[cfg(target_os = "macos")]
+fn markdown_type() -> Option<objc2::rc::Retained<objc2_uniform_type_identifiers::UTType>> {
+    use objc2_foundation::NSString;
+    objc2_uniform_type_identifiers::UTType::typeWithIdentifier(&NSString::from_str(MARKDOWN_TYPE))
+}
+
+fn app_name(path: &str) -> String {
+    Path::new(path)
+        .file_stem()
+        .map(|name| name.to_string_lossy().into_owned())
+        .unwrap_or_else(|| path.to_string())
+}
+
+/// Asks macOS to open Markdown files with MDViewer from now on. macOS may ask
+/// the user to confirm. Blocks until macOS answers, so call it off the main thread.
+pub fn make_default_viewer(app: &AppHandle) -> Result<(), String> {
+    #[cfg(target_os = "macos")]
+    {
+        use std::sync::mpsc;
+        use std::time::Duration;
+
+        let (tx, rx) = mpsc::channel::<Result<(), String>>();
+        app.run_on_main_thread(move || {
+            use block2::RcBlock;
+            use objc2_app_kit::NSWorkspace;
+            use objc2_foundation::{NSBundle, NSError};
+
+            let Some(content_type) = markdown_type() else {
+                let _ = tx.send(Err("macOS doesn’t know the Markdown file type.".into()));
+                return;
+            };
+            let done = tx.clone();
+            let handler = RcBlock::new(move |error: *mut NSError| {
+                let result = if error.is_null() {
+                    Ok(())
+                } else {
+                    // SAFETY: a non-null error passed to the handler is a valid NSError.
+                    Err(unsafe { &*error }.localizedDescription().to_string())
+                };
+                let _ = done.send(result);
+            });
+            NSWorkspace::sharedWorkspace()
+                .setDefaultApplicationAtURL_toOpenContentType_completionHandler(
+                    &NSBundle::mainBundle().bundleURL(),
+                    &content_type,
+                    Some(&handler),
+                );
+        })
+        .map_err(|e| e.to_string())?;
+        rx.recv_timeout(Duration::from_secs(120))
+            .map_err(|_| "macOS didn’t respond.".to_string())?
+    }
+    #[cfg(not(target_os = "macos"))]
+    {
+        let _ = app;
+        Err("Only supported on macOS.".into())
+    }
+}

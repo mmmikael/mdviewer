@@ -2,7 +2,7 @@
 
 A small, native-feeling Markdown viewer for macOS, built with [Tauri 2](https://v2.tauri.app) (Rust) and Svelte 5. See [PLAN.md](PLAN.md) for the design and the reasoning behind it.
 
-- Opens `.md` files from Finder, the Dock, drag and drop, ⌘O, Open Recent and `open -a MDViewer file.md`
+- Opens `.md` files from Finder, the Dock, drag and drop, ⌘O, Open Recent and `open -a MDViewer file.md`; declares itself a default handler for Markdown, and Settings has a **Make Default** button for Macs where another app is already the default
 - GitHub-flavoured Markdown: tables, task lists, footnotes, alerts, front matter, syntax highlighting (Shiki), Mermaid diagrams, KaTeX math, local and remote images
 - Live reload when the file changes on disk, keeping the scroll position
 - Native window chrome: translucent sidebar with table of contents, inset traffic lights, macOS menus and shortcuts, native window tabs, light/dark mode

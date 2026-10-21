@@ -95,6 +95,20 @@ pub fn copy_text(text: String) -> Result<(), String> {
     crate::platform::copy_to_clipboard(&text).map_err(|e| e.to_string())
 }
 
+/// Whether MDViewer opens Markdown files on double-click, and which app does now.
+#[tauri::command]
+pub fn get_default_viewer() -> crate::platform::DefaultViewer {
+    crate::platform::default_viewer()
+}
+
+/// Makes MDViewer the default app for Markdown files. Async so the wait for
+/// macOS (which may ask the user to confirm) doesn't block the main thread.
+#[tauri::command]
+pub async fn make_default_viewer(app: AppHandle) -> Result<crate::platform::DefaultViewer, String> {
+    crate::platform::make_default_viewer(&app)?;
+    Ok(crate::platform::default_viewer())
+}
+
 #[tauri::command]
 pub fn get_settings(app: AppHandle) -> Settings {
     settings::current(&app)

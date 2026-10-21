@@ -33,6 +33,14 @@ export const DEFAULT_SETTINGS: Settings = {
   editorApp: null,
 };
 
+export interface DefaultViewer {
+  isDefault: boolean;
+  /** The app that opens Markdown files now, e.g. "Xcode". */
+  currentApp: string | null;
+  /** False in `tauri dev`, where the app isn't a bundle macOS can register. */
+  canChange: boolean;
+}
+
 export type MenuAction =
   | "find"
   | "find-next"
@@ -46,7 +54,8 @@ export type MenuAction =
   | "zoom-out";
 
 export interface Events {
-  "doc:open": string;
+  /** A file was assigned to this window; fetch it with `takePendingOpen`. */
+  "doc:open": null;
   "doc:changed": Doc;
   "doc:missing": string;
   "menu:action": MenuAction;
@@ -68,6 +77,8 @@ export const ipc = {
   getRecent: () => invoke<string[]>("get_recent"),
   showSettings: () => invoke<void>("show_settings"),
   chooseEditorApp: () => invoke<string | null>("choose_editor_app"),
+  getDefaultViewer: () => invoke<DefaultViewer>("get_default_viewer"),
+  makeDefaultViewer: () => invoke<DefaultViewer>("make_default_viewer"),
 };
 
 /**

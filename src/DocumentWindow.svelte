@@ -384,7 +384,10 @@
     darkQuery.addEventListener("change", onThemeChange);
 
     const unlisteners = [
-      on("doc:open", (path) => void load(path, { push: true })),
+      on("doc:open", async () => {
+        const path = await ipc.takePendingOpen();
+        if (path) await load(path, { push: true });
+      }),
       on("doc:changed", (changed) => {
         if (!doc || changed.path !== doc.path) return;
         missing = false;

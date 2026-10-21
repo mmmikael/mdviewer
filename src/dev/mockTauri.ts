@@ -30,6 +30,7 @@ export function installMocks() {
   const file = params.get("file");
   let settings: Settings = { ...DEFAULT_SETTINGS };
   let current: string | null = null;
+  let isDefault = false;
 
   mockWindows(params.get("window") ?? "doc-1");
   mockConvertFileSrc("macos");
@@ -52,6 +53,11 @@ export function installMocks() {
           return null;
         case "get_recent":
           return Object.keys(files);
+        case "get_default_viewer":
+          return { isDefault, currentApp: isDefault ? "MDViewer" : "Xcode", canChange: true };
+        case "make_default_viewer":
+          isDefault = true;
+          return { isDefault, currentApp: "MDViewer", canChange: true };
         default:
           console.info("[mock ipc]", cmd, args);
           return null;

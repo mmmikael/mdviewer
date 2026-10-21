@@ -3,7 +3,7 @@
 MDViewer shows Markdown files and keeps them up to date while you edit them in another app.
 
 > [!TIP]
-> Make MDViewer the default for `.md` files: select a Markdown file in Finder, choose **File ▸ Get Info**, pick MDViewer under **Open with**, then click **Change All…**.
+> To open Markdown files with MDViewer when you double-click them, choose **MDViewer ▸ Settings…** and click **Make Default**. (Or in Finder: select a `.md` file, choose **File ▸ Get Info**, pick MDViewer under **Open with**, then click **Change All…**.)
 
 ## Opening files
 

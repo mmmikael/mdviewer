@@ -39,6 +39,8 @@ panic = "abort"
 strip = true
 
 [target.'cfg(target_os = "macos")'.dependencies]
+block2 = "0.6.2"
 objc2 = "0.6.5"
-objc2-app-kit = "0.3.2"
+objc2-app-kit = { version = "0.3.2", features = ["objc2-uniform-type-identifiers", "block2"] }
 objc2-foundation = "0.3.2"
+objc2-uniform-type-identifiers = "0.3.2"

@@ -1,10 +1,21 @@
 <script lang="ts">
   import { onMount } from "svelte";
 
-  import { DEFAULT_SETTINGS, ipc, on, type ContentWidth, type Settings, type ThemePref } from "./lib/ipc";
+  import {
+    DEFAULT_SETTINGS,
+    ipc,
+    on,
+    type ContentWidth,
+    type DefaultViewer,
+    type Settings,
+    type ThemePref,
+  } from "./lib/ipc";
   import { basename } from "./lib/paths";
 
   let settings = $state<Settings>({ ...DEFAULT_SETTINGS });
+  let defaultViewer = $state<DefaultViewer | null>(null);
+  let makingDefault = $state(false);
+  let defaultError = $state<string | null>(null);
 
   const themes: { value: ThemePref; label: string }[] = [
     { value: "system", label: "System" },
@@ -28,17 +39,64 @@
     if (app) save({ editorApp: app });
   }
 
+  async function refreshDefaultViewer() {
+    defaultViewer = await ipc.getDefaultViewer().catch(() => null);
+  }
+
+  async function makeDefault() {
+    makingDefault = true;
+    defaultError = null;
+    try {
+      defaultViewer = await ipc.makeDefaultViewer();
+    } catch (error) {
+      defaultError = String(error);
+    } finally {
+      makingDefault = false;
+    }
+  }
+
   onMount(() => {
     const unlisten = on("settings:changed", (next) => (settings = next));
+    // The default app can also be changed in Finder while this window is open.
+    window.addEventListener("focus", refreshDefaultViewer);
     void (async () => {
       settings = await ipc.getSettings();
+      await refreshDefaultViewer();
       await ipc.showWindow();
     })();
-    return () => void unlisten.then((fn) => fn());
+    return () => {
+      window.removeEventListener("focus", refreshDefaultViewer);
+      void unlisten.then((fn) => fn());
+    };
   });
 </script>
 
 <form class="settings" onsubmit={(e) => e.preventDefault()}>
+  {#if defaultViewer}
+    <section>
+      <div class="row">
+        <span class="label">Markdown files</span>
+        <div class="inline">
+          {#if defaultViewer.isDefault}
+            <span class="value">Open in MDViewer</span>
+          {:else}
+            <span class="value">Open in {defaultViewer.currentApp ?? "another app"}</span>
+            <button
+              type="button"
+              class="push-button"
+              disabled={!defaultViewer.canChange || makingDefault}
+              title={defaultViewer.canChange ? "" : "Only available in the built app"}
+              onclick={makeDefault}>Make Default</button
+            >
+          {/if}
+        </div>
+      </div>
+      {#if defaultError}
+        <p class="error">{defaultError}</p>
+      {/if}
+    </section>
+  {/if}
+
   <section>
     <div class="row">
       <span class="label">Appearance</span>
@@ -198,6 +256,12 @@
   .segmented button.selected {
     background: var(--control-bg);
     box-shadow: 0 0.5px 1.5px rgba(0, 0, 0, 0.2);
+  }
+
+  .error {
+    margin: 0 0 10px;
+    color: #d70015;
+    font-size: 12px;
   }
 
   .push-button:disabled {

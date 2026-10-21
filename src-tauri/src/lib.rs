@@ -52,6 +52,8 @@ pub fn run() {
             commands::get_recent,
             commands::show_settings,
             commands::choose_editor_app,
+            commands::get_default_viewer,
+            commands::make_default_viewer,
         ])
         .build(tauri::generate_context!())
         .expect("error while building MDViewer");
