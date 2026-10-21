@@ -28,7 +28,10 @@ jobs:
       - run: cargo test --manifest-path src-tauri/Cargo.toml
 
   release:
-    # Tags like v0.2.0 build a signed, notarised universal DMG and attach it to a draft release.
+    # Tags like v0.2.0 build a universal (Apple silicon + Intel) DMG and attach it
+    # to a draft release. With the Apple secrets set, the app is signed with the
+    # Developer ID and notarised; without them it is ad-hoc signed, which macOS
+    # accepts after "Open Anyway" (an unsigned bundle would be reported as damaged).
     if: startsWith(github.ref, 'refs/tags/v')
     needs: test
     runs-on: macos-latest
@@ -45,18 +48,39 @@ jobs:
         with:
           targets: aarch64-apple-darwin,x86_64-apple-darwin
       - run: pnpm install --frozen-lockfile
-      - uses: tauri-apps/tauri-action@v0
+      - name: Choose signing
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # Developer ID certificate (base64 .p12) and notarisation credentials.
           APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
           APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
           APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          # Only pass on secrets that are set: empty values would make the
+          # bundler try (and fail) to sign or notarise.
+          if [ -n "$APPLE_CERTIFICATE" ]; then
+            for name in APPLE_CERTIFICATE APPLE_CERTIFICATE_PASSWORD APPLE_SIGNING_IDENTITY APPLE_ID APPLE_PASSWORD APPLE_TEAM_ID; do
+              if [ -n "${!name}" ]; then
+                { echo "$name<<__VALUE__"; printf '%s\n' "${!name}"; echo "__VALUE__"; } >> "$GITHUB_ENV"
+              fi
+            done
+            echo "SIGNING_NOTE=Signed with a Developer ID and notarised by Apple." >> "$GITHUB_ENV"
+          else
+            echo "APPLE_SIGNING_IDENTITY=-" >> "$GITHUB_ENV"
+            echo "SIGNING_NOTE=This build isn't notarised: the first time you open it, macOS blocks it. Go to System Settings ▸ Privacy & Security and click **Open Anyway**." >> "$GITHUB_ENV"
+          fi
+      - uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tagName: ${{ github.ref_name }}
           releaseName: MDViewer ${{ github.ref_name }}
+          releaseBody: |
+            **Install:** download the `.dmg` below (one file for Apple silicon and Intel, macOS 13 or later), open it and drag MDViewer to Applications.
+
+            ${{ env.SIGNING_NOTE }}
+
+            To open Markdown files with MDViewer by double-click, choose **MDViewer ▸ Settings… ▸ Make Default**.
           releaseDraft: true
           args: --target universal-apple-darwin
