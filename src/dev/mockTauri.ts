@@ -68,6 +68,8 @@ export function installMocks() {
         case "copy_rich":
           (window as unknown as { mdvLastClipboard: unknown }).mdvLastClipboard = { html: a.html, text: a.text };
           return null;
+        case "window_chrome":
+          return { titlebarHeight: 66, controlsEnd: 79, controlsCenterY: 26 };
         case "get_default_viewer":
           return { isDefault, currentApp: isDefault ? "MDViewer" : "Xcode", canChange: true };
         case "make_default_viewer":

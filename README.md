@@ -79,7 +79,7 @@ tests/                     Vitest tests and Markdown fixtures
 ## Notes
 
 - **Versions are pinned to Tauri 2.11 / plugin 2.4–2.7** because newer plugin crates need Rust 1.90. Keep the JS packages (`@tauri-apps/*`) on the same minor versions as their Rust crates when upgrading.
-- **Traffic lights** are positioned in `platform.rs` (`TRAFFIC_LIGHTS`) because Tauri's `trafficLightPosition` doesn't take effect on current macOS for these windows. The sidebar toggle in `DocumentWindow.svelte` is placed to match.
+- **Title bar:** document windows get an empty unified `NSToolbar` (`platform.rs`), so macOS itself lays out a tall title bar and places the window buttons, as in Mail or Notes. The page asks for their position (`window_chrome`) and lines up its toolbar and sidebar button with them. (Moving the buttons by hand made them jump while resizing.)
 - **Security:** documents are sanitised with DOMPurify, scripts never run, the web view can't navigate away from the app, and only folders of opened documents (or their git repository) are readable through the asset protocol. There is no `fs` or `shell` plugin.
 
 ## Releasing

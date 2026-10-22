@@ -10,7 +10,7 @@ Phases 0–7 are implemented; see [README.md](README.md) for how to run and buil
 - **Verified in the browser with mocked IPC:** find (count, next/previous, wrap-around), links to other documents and back with scroll restore, zoom, sidebar toggle, live updates that keep scroll and Mermaid nodes, Settings layout.
 - **Implemented but not exercised by hand yet:** menu commands (Open dialog, Open Recent, Reveal in Finder, Open in Editor, Copy File Path, Print), native tab merging, drag and drop onto a window, the link context menu, Settings changes applied across windows.
 - **Not done:** signing and notarisation (needs the Developer ID certificate, §12), the universal build (needs `rustup target add x86_64-apple-darwin`), and the optional auto-updater (§4, Phase 7).
-- **Deviations from the plan:** Tauri pinned to 2.11 with matching plugins (Rust 1.89 on this machine); traffic lights positioned through AppKit in `platform.rs` because Tauri's option doesn't take effect; windows are shown by a `show_window` command once the first render is done.
+- **Deviations from the plan:** Tauri pinned to 2.11 with matching plugins (Rust 1.89 on this machine); the title bar comes from an empty native unified toolbar (Tauri's traffic light option doesn't take effect, and moving the buttons by hand made them jump); windows are shown by a `show_window` command once the first render is done.
 
 ## 1. Goals and non-goals
 

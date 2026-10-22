@@ -17,7 +17,15 @@
   import Sidebar from "./components/Sidebar.svelte";
   import { clipboardHtml, standaloneHtml } from "./lib/export";
   import { Finder } from "./lib/find";
-  import { DEFAULT_SETTINGS, ipc, on, type Doc, type MenuAction, type Settings } from "./lib/ipc";
+  import {
+    DEFAULT_SETTINGS,
+    ipc,
+    on,
+    type Doc,
+    type MenuAction,
+    type Settings,
+    type WindowChrome,
+  } from "./lib/ipc";
   import { prepareHighlighting } from "./lib/markdown/highlight";
   import { renderDiagrams } from "./lib/markdown/mermaid";
   import { buildFragment } from "./lib/markdown/postprocess";
@@ -42,6 +50,12 @@
   let loadError = $state<string | null>(null);
   let missing = $state(false);
   let toast = $state<string | null>(null);
+  /**
+   * Where the window buttons are, so our toolbar lines up with them. The toolbar
+   * is sized to centre on the buttons (macOS may report a taller title bar).
+   */
+  let chrome = $state<WindowChrome | null>(null);
+  let chromeTimer: ReturnType<typeof setTimeout> | undefined;
   /** Destination of the hovered link, shown bottom-left like Safari. */
   let linkHover = $state<string | null>(null);
   let hoveredLink: HTMLAnchorElement | null = null;
@@ -449,8 +463,13 @@
 
   // ── Startup ──────────────────────────────────────────────────────────────
 
+  async function measureChrome() {
+    chrome = (await ipc.windowChrome().catch(() => null)) ?? chrome;
+  }
+
   async function start() {
     settings = await ipc.getSettings().catch(() => settings);
+    await measureChrome();
     const pending = await ipc.takePendingOpen().catch(() => null);
     if (pending) await load(pending);
     else recent = await ipc.getRecent().catch(() => []);
@@ -507,13 +526,25 @@
   });
 </script>
 
-<svelte:window oncontextmenu={onContextMenu} onkeydown={onKeydown} onkeyup={onKeyup} />
+<svelte:window
+  oncontextmenu={onContextMenu}
+  onkeydown={onKeydown}
+  onkeyup={onKeyup}
+  onresize={() => {
+    // The title bar changes in full screen.
+    clearTimeout(chromeTimer);
+    chromeTimer = setTimeout(measureChrome, 150);
+  }}
+/>
 
 <div
   class="window"
   class:with-sidebar={showSidebar}
   style:--zoom={settings.zoom}
   style:--content-width={CONTENT_WIDTHS[settings.contentWidth]}
+  style:--toolbar-height={chrome ? `${Math.max(chrome.controlsCenterY * 2, 38)}px` : undefined}
+  style:--controls-end={chrome ? `${chrome.controlsEnd}px` : undefined}
+  style:--controls-center={chrome ? `${chrome.controlsCenterY}px` : undefined}
 >
   {#if showSidebar}
     <Sidebar {headings} {active} onselect={selectHeading} />
@@ -628,13 +659,14 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 0 120px;
+    /* Clear the window buttons and the sidebar button next to them. */
+    padding: 0 calc(var(--controls-end, 76px) + 56px);
     border-bottom: 1px solid transparent;
     transition: border-color 0.15s;
   }
 
   .with-sidebar .toolbar {
-    padding-left: 24px;
+    padding: 0 24px;
   }
 
   .toolbar.scrolled {
@@ -663,10 +695,16 @@
   }
 
   /* Sits right of the traffic lights (see TRAFFIC_LIGHTS in platform.rs). */
+  /* Placed like Mail and Notes: next to the window buttons while the sidebar is
+     closed, at the sidebar's trailing edge while it's open. */
   .sidebar-toggle {
     position: absolute;
-    top: 14px;
-    left: 90px;
+    top: calc(var(--controls-center, 26px) - 12px);
+    left: calc(var(--controls-end, 76px) + 14px);
+  }
+
+  .with-sidebar .sidebar-toggle {
+    left: calc(var(--sidebar-width) - 38px);
   }
 
   .banner {

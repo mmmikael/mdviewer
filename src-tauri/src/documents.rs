@@ -243,7 +243,7 @@ pub fn create_window(app: &AppHandle, path: Option<PathBuf>) -> tauri::Result<We
             .tabbing_identifier("com.mmmikael.mdviewer.document")
     };
     let window = builder.build()?;
-    crate::platform::position_traffic_lights(&window);
+    crate::platform::install_unified_toolbar(&window);
 
     // Cascade instead of stacking exactly on top of the current window.
     if let (Some(anchor), Ok(position)) = (anchor, window.outer_position())

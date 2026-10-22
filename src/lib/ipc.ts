@@ -41,6 +41,15 @@ export interface DefaultViewer {
   canChange: boolean;
 }
 
+/** Where macOS put the title bar and window buttons, in points (see platform.rs). */
+export interface WindowChrome {
+  titlebarHeight: number;
+  /** Right edge of the zoom (green) button. */
+  controlsEnd: number;
+  /** Vertical centre of the window buttons. */
+  controlsCenterY: number;
+}
+
 export type MenuAction =
   | "find"
   | "find-next"
@@ -70,6 +79,7 @@ export interface Events {
 
 export const ipc = {
   showWindow: () => invoke<void>("show_window"),
+  windowChrome: () => invoke<WindowChrome | null>("window_chrome"),
   takePendingOpen: () => invoke<string | null>("take_pending_open"),
   openDocument: (path: string) => invoke<Doc>("open_document", { path }),
   reloadDocument: () => invoke<Doc>("reload_document"),

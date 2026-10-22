@@ -46,55 +46,78 @@ pub fn clear_recent_documents(app: &AppHandle) {
     let _ = app;
 }
 
-/// Where the close/minimise/zoom buttons sit, so they line up with our toolbar.
-pub const TRAFFIC_LIGHTS: (f64, f64) = (18.0, 26.0);
-
-/// Moves the window's traffic lights. Tauri's own `traffic_light_position` is
-/// applied from a draw callback that recent macOS versions don't call for our
-/// windows, so we do it here and again after every resize (AppKit resets it).
-pub fn position_traffic_lights(window: &tauri::WebviewWindow) {
+/// Gives a document window an empty unified toolbar, as in Mail or Notes:
+/// macOS then lays out a tall title bar and places the window buttons in it
+/// itself. (Moving the buttons by hand made them jump while resizing, because
+/// AppKit puts them back on every layout pass.)
+pub fn install_unified_toolbar(window: &tauri::WebviewWindow) {
     #[cfg(target_os = "macos")]
     {
         let Ok(ptr) = window.ns_window() else { return };
         let ptr = ptr as usize;
         let _ = window.run_on_main_thread(move || {
-            use objc2_app_kit::{NSWindow, NSWindowButton};
+            use objc2::{MainThreadMarker, MainThreadOnly};
+            use objc2_app_kit::{
+                NSTitlebarSeparatorStyle, NSToolbar, NSWindow, NSWindowToolbarStyle,
+            };
+            use objc2_foundation::NSString;
 
+            let Some(mtm) = MainThreadMarker::new() else {
+                return;
+            };
             // SAFETY: Tauri hands out a valid NSWindow pointer for the window's
             // lifetime, and we're on the main thread.
             let window = unsafe { &*(ptr as *const NSWindow) };
-            let (x, y) = TRAFFIC_LIGHTS;
-            let buttons = [
-                NSWindowButton::CloseButton,
-                NSWindowButton::MiniaturizeButton,
-                NSWindowButton::ZoomButton,
-            ]
-            .map(|kind| window.standardWindowButton(kind));
-            let [Some(close), Some(minimize), Some(zoom)] = buttons else {
-                return;
-            };
-            // SAFETY: the buttons live in the title bar's view hierarchy on the main thread.
-            let container = unsafe { close.superview().and_then(|v| v.superview()) };
-            let Some(container) = container else {
-                return;
-            };
-
-            let close_frame = close.frame();
-            let mut bar = container.frame();
-            bar.size.height = close_frame.size.height + y;
-            bar.origin.y = window.frame().size.height - bar.size.height;
-            container.setFrame(bar);
-
-            let spacing = minimize.frame().origin.x - close_frame.origin.x;
-            for (i, button) in [close, minimize, zoom].iter().enumerate() {
-                let mut origin = button.frame().origin;
-                origin.x = x + i as f64 * spacing;
-                button.setFrameOrigin(origin);
-            }
+            let toolbar = NSToolbar::initWithIdentifier(
+                NSToolbar::alloc(mtm),
+                &NSString::from_str("com.mmmikael.mdviewer.toolbar"),
+            );
+            window.setToolbar(Some(&toolbar));
+            window.setToolbarStyle(NSWindowToolbarStyle::Unified);
+            window.setTitlebarSeparatorStyle(NSTitlebarSeparatorStyle::None);
         });
     }
     #[cfg(not(target_os = "macos"))]
     let _ = window;
+}
+
+/// Where macOS put the title bar and window buttons, in points from the
+/// window's top-left, so the page can line its own toolbar up with them.
+#[derive(Clone, Copy, Debug, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct WindowChrome {
+    pub titlebar_height: f64,
+    /// Right edge of the zoom (green) button.
+    pub controls_end: f64,
+    /// Vertical centre of the window buttons.
+    pub controls_center_y: f64,
+}
+
+/// Must be called on the main thread.
+pub fn window_chrome(window: &tauri::WebviewWindow) -> Option<WindowChrome> {
+    #[cfg(target_os = "macos")]
+    {
+        use objc2::MainThreadMarker;
+        use objc2_app_kit::{NSWindow, NSWindowButton};
+
+        MainThreadMarker::new()?;
+        let ptr = window.ns_window().ok()?;
+        // SAFETY: valid NSWindow pointer, used on the main thread (checked above).
+        let window = unsafe { &*(ptr as *const NSWindow) };
+        let frame = window.frame();
+        let zoom = window.standardWindowButton(NSWindowButton::ZoomButton)?;
+        let button = zoom.convertRect_toView(zoom.bounds(), None);
+        Some(WindowChrome {
+            titlebar_height: frame.size.height - window.contentLayoutRect().size.height,
+            controls_end: button.origin.x + button.size.width,
+            controls_center_y: frame.size.height - (button.origin.y + button.size.height / 2.0),
+        })
+    }
+    #[cfg(not(target_os = "macos"))]
+    {
+        let _ = window;
+        None
+    }
 }
 
 /// Puts text on the general pasteboard.

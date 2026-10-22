@@ -41,6 +41,7 @@ pub fn run() {
         .on_menu_event(menu::handle)
         .invoke_handler(tauri::generate_handler![
             commands::show_window,
+            commands::window_chrome,
             commands::take_pending_open,
             commands::open_document,
             commands::reload_document,
@@ -92,18 +93,7 @@ pub fn run() {
                 watcher::unwatch(app, &label);
                 menu::refresh(app);
             }
-            // AppKit puts the traffic lights back whenever it lays out the title bar
-            // (showing, focusing and resizing the window).
-            WindowEvent::Focused(_) | WindowEvent::Resized(_) | WindowEvent::ThemeChanged(_) => {
-                if matches!(event, WindowEvent::Focused(true)) {
-                    menu::refresh(app);
-                }
-                if documents::is_doc_window(&label)
-                    && let Some(window) = app.get_webview_window(&label)
-                {
-                    platform::position_traffic_lights(&window);
-                }
-            }
+            WindowEvent::Focused(true) => menu::refresh(app),
             _ => {}
         },
         _ => {}

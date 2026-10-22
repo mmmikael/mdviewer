@@ -21,7 +21,6 @@ pub fn take_pending_open(window: WebviewWindow, docs: State<Documents>) -> Optio
 pub fn show_window(app: AppHandle, window: WebviewWindow) {
     let _ = window.show();
     if documents::is_doc_window(window.label()) {
-        crate::platform::position_traffic_lights(&window);
         debug_export(&app, &window);
     }
 }
@@ -42,6 +41,13 @@ fn debug_export(app: &AppHandle, window: &WebviewWindow) {
     }
     #[cfg(not(debug_assertions))]
     let _ = (app, window);
+}
+
+/// Where macOS put the title bar and window buttons (see platform.rs).
+/// Sync on purpose: Tauri runs sync commands on the main thread, which AppKit needs.
+#[tauri::command]
+pub fn window_chrome(window: WebviewWindow) -> Option<crate::platform::WindowChrome> {
+    crate::platform::window_chrome(&window)
 }
 
 /// Loads a file into the calling window and starts watching it.
