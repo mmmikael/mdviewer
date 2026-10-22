@@ -120,7 +120,9 @@
     display: flex;
     align-items: baseline;
     justify-content: space-between;
-    padding: 0 8px 4px;
+    /* Right inset matches where the folder names end: the row's 4px padding
+       plus the remove button (18px wide, 4px margin) shown on hover. */
+    padding: 0 26px 4px 8px;
   }
 
   .recent-title {
