@@ -1,6 +1,6 @@
 [package]
 name = "mdviewer"
-version = "0.2.2"
+version = "0.3.0"
 description = "A native-feeling Markdown viewer for macOS"
 authors = ["Mikael Rousson"]
 license = "MIT"
