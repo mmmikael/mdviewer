@@ -3,6 +3,7 @@ mod documents;
 mod export;
 mod menu;
 mod platform;
+mod resources;
 mod settings;
 mod watcher;
 
@@ -26,6 +27,10 @@ pub fn run() {
                 .with_state_flags(StateFlags::all() & !StateFlags::VISIBLE)
                 .build(),
         )
+        // Large shared files (Mermaid) that ship once in the bundle; see resources.rs.
+        .register_asynchronous_uri_scheme_protocol(resources::SCHEME, |_ctx, request, responder| {
+            std::thread::spawn(move || responder.respond(resources::handle(&request)));
+        })
         .manage(Documents::default())
         .manage(watcher::Watchers::default())
         .manage(settings::AppState::default())

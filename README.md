@@ -104,7 +104,7 @@ Build output: `src-tauri/target/release/bundle/` (about 8 MB app, 6 MB DMG).
 
 ## Quick Look extension
 
-`quicklook/` holds a small Quick Look preview extension (Swift, no Xcode project). `quicklook/build.sh` builds the preview page from `src/quicklook/` (the app's Markdown pipeline with a bundled subset of languages; Mermaid's single-file build is shipped next to it and loaded only for documents with diagrams), compiles the extension and signs it; `tauri build` runs it before bundling and copies the result into `MDViewer.app/Contents/PlugIns`. To try a build's extension without installing it:
+`quicklook/` holds a small Quick Look preview extension (Swift, no Xcode project). `quicklook/build.sh` builds the preview page from `src/quicklook/` (the app's Markdown pipeline with a bundled subset of languages; Mermaid's single-file build is shipped next to it and loaded only for documents with diagrams; the app loads that same file through its `mdvres://` scheme (`src-tauri/src/resources.rs`), so the bundle carries Mermaid once), compiles the extension and signs it; `tauri build` runs it before bundling and copies the result into `MDViewer.app/Contents/PlugIns`. To try a build's extension without installing it:
 
 ```bash
 qlmanage -p tests/fixtures/rich.md
