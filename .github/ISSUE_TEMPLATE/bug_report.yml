@@ -1,0 +1,73 @@
+name: Bug report
+description: Something doesn't work or looks wrong.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: Thanks for reporting! The more of this you fill in, the faster it gets fixed.
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What you did, what you expected, and what happened instead.
+      placeholder: |
+        1. Open a file with …
+        2. …
+        Expected: …
+        Got: …
+    validations:
+      required: true
+  - type: textarea
+    id: markdown
+    attributes:
+      label: Markdown that shows the problem
+      description: If it's about rendering, paste the smallest piece of Markdown that reproduces it. Leave out anything private.
+      render: markdown
+  - type: input
+    id: version
+    attributes:
+      label: MDViewer version
+      description: MDViewer ▸ About MDViewer
+      placeholder: "0.3.0"
+    validations:
+      required: true
+  - type: input
+    id: macos
+    attributes:
+      label: macOS version
+      description: Apple menu ▸ About This Mac
+      placeholder: "macOS 26.3"
+    validations:
+      required: true
+  - type: dropdown
+    id: chip
+    attributes:
+      label: Mac
+      options:
+        - Apple silicon (M1 or later)
+        - Intel
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Where
+      multiple: true
+      options:
+        - Rendering (Markdown, code, math, diagrams)
+        - Live reload
+        - Quick Look preview
+        - AI summary (TL;DR)
+        - Export, print or copy
+        - Settings
+        - Other
+  - type: input
+    id: provider
+    attributes:
+      label: AI provider and model
+      description: Only for AI summary problems, e.g. "OpenRouter, deepseek/deepseek-v4.1-flash". Never paste your API key.
+  - type: textarea
+    id: extra
+    attributes:
+      label: Screenshots or anything else
+      description: Drag images here. Error messages from the summary card help too.
