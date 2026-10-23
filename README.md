@@ -1,14 +1,57 @@
-# MDViewer
+<p align="center"><img src="src-tauri/icons/128x128@2x.png" width="128" alt=""></p>
 
-A small, native-feeling Markdown viewer for macOS, built with [Tauri 2](https://v2.tauri.app) (Rust) and Svelte 5. See [PLAN.md](PLAN.md) for the design and the reasoning behind it.
+<h1 align="center">MDViewer</h1>
 
-- Opens `.md` files from Finder, the Dock, drag and drop, ⌘O, Open Recent and `open -a MDViewer file.md`; declares itself a default handler for Markdown, and Settings has a **Make Default** button for Macs where another app is already the default
-- GitHub-flavoured Markdown: tables, task lists, footnotes, alerts, front matter, syntax highlighting (Shiki), Mermaid diagrams, KaTeX math, local and remote images
-- Live reload when the file changes on disk, keeping the scroll position
-- Native window chrome: translucent sidebar with table of contents, inset traffic lights, macOS menus and shortcuts, native window tabs, light/dark mode
-- Find in page, zoom, back/forward between linked documents, Settings window; hovering a link shows where it goes, like Safari
-- Export as PDF or as a self-contained HTML file, print, and Copy as Rich Text for pasting into Mail, Docs or Slack
-- Quick Look: press space on a `.md` file in Finder to preview it with the same rendering
+<p align="center">
+  A fast, native Markdown viewer for macOS, with Quick Look previews, live reload, diagrams and math.<br>
+  Free and open source.
+</p>
+
+<p align="center">
+  <a href="https://github.com/mmmikael/mdviewer/releases/latest"><strong>Download for macOS</strong></a>
+  · Apple silicon and Intel · macOS 13 or later
+</p>
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/images/screenshot-dark.png">
+  <img src="docs/images/screenshot-light.png" alt="MDViewer showing a document with a table of contents, a note, highlighted code, a math formula and a diagram">
+</picture>
+
+## Why MDViewer
+
+- **Feels like a Mac app.** Native windows, tabs and menus, a translucent sidebar with the table of contents, light and dark mode. A 14 MB download that opens instantly.
+- **Live reload.** Keep it next to your editor, or next to the AI tool writing your docs: every save shows up right away, and you keep your place.
+- **Quick Look.** Press space on a `.md` file in Finder for a rendered preview, diagrams and math included.
+- **Renders what GitHub renders.** Tables, task lists, footnotes, alerts, front matter, syntax highlighting for 200+ languages, Mermaid diagrams, KaTeX math, and local images.
+- **Share it.** Export as PDF or as a single self-contained HTML file, or copy as rich text to paste into Mail, Google Docs or Slack.
+- **Private and safe.** No accounts, no tracking. Documents can't run scripts, and the app only reads the files you open and the images they show.
+
+### Live reload
+
+<img src="docs/images/live-reload.gif" width="640" alt="A checklist document updating in MDViewer as the file is saved: text appears, items get ticked, a table row, a diagram node and a new section are added">
+
+### Quick Look
+
+Select a Markdown file in Finder and press the space bar:
+
+<img src="docs/images/quicklook.png" width="640" alt="Quick Look preview of a Markdown document rendered by MDViewer">
+
+### How it compares
+
+| | MDViewer | Marked 2 | Typora | MacDown |
+|---|---|---|---|---|
+| What it is | Viewer | Previewer | Editor | Editor with preview |
+| Price | Free | Paid | Paid | Free |
+| Open source | Yes | No | No | Yes |
+
+MDViewer is for reading: you write Markdown in your own editor (or let your tools write it) and read it here. If you'd rather edit in the same app, Typora or MacDown are good choices.
+
+### All features
+
+- Opens `.md` files from Finder, the Dock, drag and drop, ⌘O, Open Recent and `open -a MDViewer file.md`; can be made the default app for Markdown from Settings
+- Find in page, zoom, back and forward between linked documents; hovering a link shows where it goes, like Safari
+- Print, Export as PDF, Export as HTML, Copy as Rich Text
+- Links to other Markdown files open in the app; links to websites open in your browser
 
 ## Install
 
@@ -20,6 +63,8 @@ Requires macOS 13 or later; one download works on both Apple silicon and Intel M
 4. To open Markdown files with MDViewer when you double-click them, choose **MDViewer ▸ Settings…** and click **Make Default**.
 
 ## Development
+
+MDViewer is built with [Tauri 2](https://v2.tauri.app) (Rust) and Svelte 5. See [PLAN.md](PLAN.md) for the design and the reasoning behind it.
 
 Requirements: Rust (1.89+), Node 22+, pnpm, Xcode command line tools.
 
