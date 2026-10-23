@@ -153,7 +153,17 @@ tests/                     Vitest tests and Markdown fixtures
 
 ## Releasing
 
-Signing and notarisation need an Apple Developer ID certificate. Locally, set `APPLE_SIGNING_IDENTITY` plus either `APPLE_ID`/`APPLE_PASSWORD`/`APPLE_TEAM_ID` or an App Store Connect API key before `pnpm tauri:build`. In CI, pushing a `v*` tag runs `.github/workflows/build.yml`, which creates a draft GitHub release and builds three DMGs for it in parallel: Apple silicon, Intel and universal. It expects the secrets listed in that file. To try the builds without releasing, run the workflow by hand (Actions ▸ Build ▸ Run workflow): the DMGs are then kept as downloadable artifacts of the run.
+Signing and notarisation need an Apple Developer ID certificate. Locally, set `APPLE_SIGNING_IDENTITY` plus either `APPLE_ID`/`APPLE_PASSWORD`/`APPLE_TEAM_ID` or an App Store Connect API key before `pnpm tauri:build`. In CI, pushing a `v*` tag runs `.github/workflows/build.yml`, which creates a draft GitHub release and builds three DMGs for it in parallel: Apple silicon, Intel and universal. Without Apple secrets the apps are ad-hoc signed. To sign and notarise, add these repository secrets:
+
+| Secret | What it is |
+|---|---|
+| `APPLE_CERTIFICATE` | The Developer ID Application certificate and its private key, exported as `.p12` and base64-encoded (`base64 -i cert.p12`) |
+| `APPLE_CERTIFICATE_PASSWORD` | The `.p12` export password |
+| `APPLE_SIGNING_IDENTITY` | The certificate's name, e.g. `Developer ID Application: Name (TEAMID)` |
+| `APPLE_API_KEY_ID`, `APPLE_API_ISSUER`, `APPLE_API_PRIVATE_KEY` | For notarisation: an App Store Connect API key (its Key ID, Issuer ID and the contents of the `.p8` file) |
+| `APPLE_ID`, `APPLE_PASSWORD`, `APPLE_TEAM_ID` | Or instead: an Apple ID, an app-specific password and the team ID |
+
+The workflow imports the certificate into a temporary keychain before building (the Quick Look extension is signed during the build), then checks each app's signature, hardened runtime and notarisation ticket. To try the builds without releasing, run the workflow by hand (Actions ▸ Build ▸ Run workflow): the DMGs are then kept as downloadable artifacts of the run.
 
 Unsigned builds work on the machine that built them; other Macs will show a Gatekeeper warning.
 
