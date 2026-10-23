@@ -6,7 +6,7 @@ Thanks for helping! Bug reports, ideas and pull requests are all welcome.
 
 - **Bugs:** use the bug report form and include your MDViewer and macOS versions. For rendering problems, the smallest piece of Markdown that shows it helps most.
 - **Ideas:** use the feature request form and start with the problem you're trying to solve. MDViewer is meant to stay a small, fast viewer rather than become an editor, so not every idea will fit, but the reasons behind it often lead somewhere useful.
-- **Security issues:** please don't post the details publicly. Open an issue that only says you found a security problem and how to reach you, and we'll take it from there privately.
+- **Security issues:** please don't open a public issue. Use [Report a vulnerability](https://github.com/mmmikael/mdviewer/security/advisories/new) (on the repository's Security tab) instead, so it can be fixed before the details are public.
 
 ## Pull requests
 
