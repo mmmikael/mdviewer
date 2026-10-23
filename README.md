@@ -19,7 +19,7 @@
 
 ## Why MDViewer
 
-- **Feels like a Mac app.** Native windows, tabs and menus, a translucent sidebar with the table of contents, light and dark mode. A 14 MB download that opens instantly.
+- **Feels like a Mac app.** Native windows, tabs and menus, a translucent sidebar with the table of contents, light and dark mode. A 7 MB download that opens instantly.
 - **Live reload.** Keep it next to your editor, or next to the AI tool writing your docs: every save shows up right away, and you keep your place.
 - **Quick Look.** Press space on a `.md` file in Finder for a rendered preview, diagrams and math included.
 - **Renders what GitHub renders.** Tables, task lists, footnotes, alerts, front matter, syntax highlighting for 200+ languages, Mermaid diagrams, KaTeX math, and local images.
