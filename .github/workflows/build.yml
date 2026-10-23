@@ -5,6 +5,9 @@ on:
     branches: [main]
     tags: ["v*"]
   pull_request:
+  # Run by hand (Actions tab ▸ Build ▸ Run workflow) to build the DMGs as
+  # downloadable artifacts without making a release.
+  workflow_dispatch:
 
 jobs:
   test:
@@ -31,16 +34,65 @@ jobs:
           bash quicklook/build.sh
           lipo -archs src-tauri/target/quicklook/MDViewerQuickLook.appex/Contents/MacOS/MDViewerQuickLook
 
-  release:
-    # Tags like v0.2.0 build a universal (Apple silicon + Intel) DMG and attach it
-    # to a draft release. With the Apple secrets set, the app is signed with the
-    # Developer ID and notarised; without them it is ad-hoc signed, which macOS
-    # accepts after "Open Anyway" (an unsigned bundle would be reported as damaged).
+  create-release:
+    # Tags like v0.3.0 get a draft release, created once here so the parallel
+    # builds below all upload to it instead of racing to create it.
     if: startsWith(github.ref, 'refs/tags/v')
     needs: test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    outputs:
+      release_id: ${{ steps.release.outputs.result }}
+    steps:
+      - name: Create the draft release
+        id: release
+        uses: actions/github-script@v7
+        env:
+          SIGNED: ${{ secrets.APPLE_CERTIFICATE != '' }}
+        with:
+          script: |
+            const tag = context.ref.replace("refs/tags/", "");
+            const version = tag.replace(/^v/, "");
+            const signing = process.env.SIGNED === "true"
+              ? "Signed with a Developer ID and notarised by Apple."
+              : "This build isn't notarised: the first time you open it, macOS blocks it. Go to System Settings ▸ Privacy & Security and click **Open Anyway**.";
+            const body = [
+              "**Install:** download the `.dmg` for your Mac below (macOS 13 or later), open it and drag MDViewer to Applications.",
+              "",
+              `- **Apple silicon** (M1 and later): \`MDViewer_${version}_aarch64.dmg\``,
+              `- **Intel:** \`MDViewer_${version}_x64.dmg\``,
+              `- **Not sure?** \`MDViewer_${version}_universal.dmg\` works on both, but is bigger. (Apple menu ▸ About This Mac shows which chip you have.)`,
+              "",
+              signing,
+              "",
+              "To open Markdown files with MDViewer by double-click, choose **MDViewer ▸ Settings… ▸ Make Default**.",
+            ].join("\n");
+            const { data } = await github.rest.repos.createRelease({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              tag_name: tag,
+              name: `MDViewer ${tag}`,
+              body,
+              draft: true,
+            });
+            return data.id;
+
+  build:
+    # One DMG per target, uploaded to the draft release on tags, or kept as
+    # workflow artifacts on manual runs. With the Apple secrets set, apps are
+    # signed with the Developer ID and notarised; without them they're ad-hoc
+    # signed, which macOS accepts after "Open Anyway" (an unsigned bundle would
+    # be reported as damaged).
+    needs: [test, create-release]
+    if: ${{ !failure() && !cancelled() && (startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch') }}
     runs-on: macos-latest
     permissions:
       contents: write
+    strategy:
+      fail-fast: false
+      matrix:
+        target: [universal-apple-darwin, aarch64-apple-darwin, x86_64-apple-darwin]
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -69,22 +121,19 @@ jobs:
                 { echo "$name<<__VALUE__"; printf '%s\n' "${!name}"; echo "__VALUE__"; } >> "$GITHUB_ENV"
               fi
             done
-            echo "SIGNING_NOTE=Signed with a Developer ID and notarised by Apple." >> "$GITHUB_ENV"
           else
             echo "APPLE_SIGNING_IDENTITY=-" >> "$GITHUB_ENV"
-            echo "SIGNING_NOTE=This build isn't notarised: the first time you open it, macOS blocks it. Go to System Settings ▸ Privacy & Security and click **Open Anyway**." >> "$GITHUB_ENV"
           fi
       - uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tagName: ${{ github.ref_name }}
-          releaseName: MDViewer ${{ github.ref_name }}
-          releaseBody: |
-            **Install:** download the `.dmg` below (one file for Apple silicon and Intel, macOS 13 or later), open it and drag MDViewer to Applications.
-
-            ${{ env.SIGNING_NOTE }}
-
-            To open Markdown files with MDViewer by double-click, choose **MDViewer ▸ Settings… ▸ Make Default**.
-          releaseDraft: true
-          args: --target universal-apple-darwin
+          # Empty on manual runs: then it only builds.
+          releaseId: ${{ needs.create-release.outputs.release_id }}
+          args: --target ${{ matrix.target }}
+      - name: Keep the DMG (manual runs)
+        if: github.event_name == 'workflow_dispatch'
+        uses: actions/upload-artifact@v4
+        with:
+          name: dmg-${{ matrix.target }}
+          path: src-tauri/target/${{ matrix.target }}/release/bundle/dmg/*.dmg

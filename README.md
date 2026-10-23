@@ -64,9 +64,12 @@ Where MDViewer differs from MacDown 3000:
 
 ## Install
 
-Requires macOS 13 or later; one download works on both Apple silicon and Intel Macs.
+Requires macOS 13 or later.
 
-1. Download the `.dmg` from the [latest release](https://github.com/mmmikael/mdviewer/releases/latest).
+1. Download the `.dmg` for your Mac from the [latest release](https://github.com/mmmikael/mdviewer/releases/latest):
+   - **Apple silicon** (M1 and later): `MDViewer_<version>_aarch64.dmg`
+   - **Intel:** `MDViewer_<version>_x64.dmg`
+   - **Not sure?** `MDViewer_<version>_universal.dmg` works on both, but is bigger. Apple menu ▸ About This Mac shows which chip you have.
 2. Open it and drag **MDViewer** to **Applications**.
 3. Open MDViewer. Releases aren't notarised by Apple yet, so the first time macOS blocks it: go to **System Settings ▸ Privacy & Security**, scroll down and click **Open Anyway**. You only need to do this once.
 4. To open Markdown files with MDViewer when you double-click them, choose **MDViewer ▸ Settings…** and click **Make Default**.
@@ -138,7 +141,7 @@ tests/                     Vitest tests and Markdown fixtures
 
 ## Releasing
 
-Signing and notarisation need an Apple Developer ID certificate. Locally, set `APPLE_SIGNING_IDENTITY` plus either `APPLE_ID`/`APPLE_PASSWORD`/`APPLE_TEAM_ID` or an App Store Connect API key before `pnpm tauri:build`. In CI, pushing a `v*` tag runs `.github/workflows/build.yml`, which builds a universal DMG and attaches it to a draft GitHub release; it expects the secrets listed in that file.
+Signing and notarisation need an Apple Developer ID certificate. Locally, set `APPLE_SIGNING_IDENTITY` plus either `APPLE_ID`/`APPLE_PASSWORD`/`APPLE_TEAM_ID` or an App Store Connect API key before `pnpm tauri:build`. In CI, pushing a `v*` tag runs `.github/workflows/build.yml`, which creates a draft GitHub release and builds three DMGs for it in parallel: Apple silicon, Intel and universal. It expects the secrets listed in that file. To try the builds without releasing, run the workflow by hand (Actions ▸ Build ▸ Run workflow): the DMGs are then kept as downloadable artifacts of the run.
 
 Unsigned builds work on the machine that built them; other Macs will show a Gatekeeper warning.
 
