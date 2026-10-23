@@ -31,6 +31,12 @@
 
 <img src="docs/images/live-reload.gif" width="640" alt="A checklist document updating in MDViewer as the file is saved: text appears, items get ticked, a table row, a diagram node and a new section are added">
 
+### TL;DR for long documents
+
+Coding agents write long plans and reports. Press ⇧⌘S for a short summary at the top, with links to the sections each point comes from. Here, [a 14 KB plan written by an agent](docs/agent-plan.md) summarized by DeepSeek V4.1 Flash through OpenRouter, at real speed (about $0.001):
+
+<img src="docs/images/tldr.webp" width="720" alt="MDViewer scrolls through a long agent-written migration plan, then the Summarize button is clicked: a TL;DR card streams in at the top with bullet points linking to sections, and clicking one jumps to the Options considered section">
+
 ### Quick Look
 
 Select a Markdown file in Finder and press the space bar:
