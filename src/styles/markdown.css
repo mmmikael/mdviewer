@@ -197,9 +197,35 @@
   list-style: none;
 }
 
+/* Read-only checkboxes are drawn by hand: WebKit greys out disabled ones, which
+   made ticked items hard to see. */
 .markdown .task-list-item-checkbox {
-  margin: 0 0.35em 0.2em -1.4em;
-  vertical-align: middle;
+  appearance: none;
+  -webkit-appearance: none;
+  display: inline-grid;
+  place-content: center;
+  width: 0.95em;
+  height: 0.95em;
+  margin: 0 0.4em 0 -1.4em;
+  vertical-align: -0.12em;
+  border: 1.5px solid var(--md-muted);
+  border-radius: 4px;
+}
+
+.markdown .task-list-item-checkbox:checked {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.markdown .task-list-item-checkbox:checked::before {
+  content: "";
+  width: 0.5em;
+  height: 0.26em;
+  margin-top: -0.12em;
+  border: 2px solid white;
+  border-top: 0;
+  border-right: 0;
+  transform: rotate(-45deg);
 }
 
 .markdown dl dt {
