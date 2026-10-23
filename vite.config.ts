@@ -2,11 +2,13 @@
 import { defineConfig } from "vite";
 import { svelte } from "@sveltejs/vite-plugin-svelte";
 
+import { katexWoff2Only } from "./vite-plugins";
+
 const host = process.env.TAURI_DEV_HOST;
 
 // https://v2.tauri.app/start/frontend/vite/
 export default defineConfig({
-  plugins: [svelte()],
+  plugins: [svelte(), katexWoff2Only()],
   // Keep Rust compiler errors visible in the terminal.
   clearScreen: false,
   server: {

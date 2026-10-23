@@ -3,22 +3,11 @@
 // Run by quicklook/build.sh with --outDir.
 
 import { resolve } from "node:path";
-import { defineConfig, type Plugin } from "vite";
+import { defineConfig } from "vite";
+
+import { katexWoff2Only } from "../vite-plugins";
 
 const root = resolve(import.meta.dirname, "..");
-
-/** KaTeX lists woff2, woff and ttf for every font; WebKit only needs woff2. */
-function katexWoff2Only(): Plugin {
-  return {
-    name: "katex-woff2-only",
-    // Before Vite's CSS handling turns the font URLs into embedded data.
-    enforce: "pre",
-    transform(code, id) {
-      if (!id.includes("katex") || !id.endsWith(".css")) return null;
-      return code.replace(/,\s*url\([^)]+\.(?:woff|ttf)\)\s*format\(["'](?:woff|truetype)["']\)/g, "");
-    },
-  };
-}
 
 export default defineConfig({
   root,

@@ -35,7 +35,9 @@ dunce = "1.0.5"
 [profile.release]
 codegen-units = 1
 lto = true
-opt-level = 3
+# Optimise for size: the heavy lifting (Markdown, highlighting, diagrams) runs
+# in the web view, so the Rust side doesn't need speed. About 40% smaller code.
+opt-level = "z"
 panic = "abort"
 strip = true
 
