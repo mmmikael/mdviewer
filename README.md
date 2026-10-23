@@ -46,7 +46,14 @@ Select a Markdown file in Finder and press the space bar:
 
 MDViewer is for reading: you write Markdown in your own editor (or let your tools write it) and read it here. If you'd rather edit in the same app, Typora or MacDown 3000 (the maintained continuation of MacDown) are good choices.
 
-Next to MacDown 3000, MDViewer stands out in a few ways. Its **Quick Look** previews draw Mermaid diagrams, render math and highlight code; MacDown 3000's Quick Look shows math as plain text, and diagrams and code as plain code blocks. It renders GitHub's **alert boxes** (`> [!NOTE]`, `> [!WARNING]` and the rest). **Copy as Rich Text** pastes formatted text, of the whole document or just your selection, into Mail, Google Docs or Slack, where MacDown 3000's Copy HTML copies the HTML source of the whole document. And because it only views, a file opens **straight to the rendered page**, with no editor pane.
+Where MDViewer differs from MacDown 3000:
+
+| | MDViewer | MacDown 3000 |
+|---|---|---|
+| Quick Look preview | Diagrams, math and highlighted code | Math as plain text; diagrams and code as plain code blocks |
+| GitHub alert boxes (`> [!NOTE]`) | Yes | No |
+| Copying for Mail, Docs or Slack | Formatted text, of the whole document or just the selection | HTML source of the whole document |
+| Opening a file | Straight to the rendered page | Editor with a preview pane |
 
 ### All features
 
