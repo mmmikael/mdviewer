@@ -37,6 +37,8 @@ export interface AiSettings {
   instructions: string | null;
   /** Cloud providers the user agreed to send documents to. */
   allowed: string[];
+  /** Keychain entries that hold a saved key (names only). Managed by Rust. */
+  keys: string[];
 }
 
 export interface Settings {
@@ -56,7 +58,7 @@ export const DEFAULT_SETTINGS: Settings = {
   showSidebar: true,
   blockRemoteImages: false,
   editorApp: null,
-  ai: { provider: "openrouter", providers: {}, instructions: null, allowed: [] },
+  ai: { provider: "openrouter", providers: {}, instructions: null, allowed: [], keys: [] },
 };
 
 export const EMPTY_PROVIDER_SETTINGS: ProviderSettings = {
@@ -89,7 +91,11 @@ export interface AiModel {
   completionPrice: number | null;
 }
 
-export type AiMessage = { type: "text"; text: string } | { type: "notice"; text: string };
+export type AiMessage =
+  /** About to read the API key from the keychain, which may show a macOS prompt. */
+  | { type: "keychain" }
+  | { type: "text"; text: string }
+  | { type: "notice"; text: string };
 
 export interface DefaultViewer {
   isDefault: boolean;
@@ -159,7 +165,7 @@ export const ipc = {
   getDefaultViewer: () => invoke<DefaultViewer>("get_default_viewer"),
   makeDefaultViewer: () => invoke<DefaultViewer>("make_default_viewer"),
   aiProviders: () => invoke<AiProvider[]>("ai_providers"),
-  /** Whether a key is saved; the key itself never comes back to the page. */
+  /** Whether a key is saved (from settings, without asking the keychain); the key never comes back to the page. */
   aiKeyStatus: (provider: string) => invoke<boolean>("ai_key_status", { provider }),
   /** Saves the key in the keychain; an empty key removes it. */
   aiSetKey: (provider: string, key: string) => invoke<void>("ai_set_key", { provider, key }),

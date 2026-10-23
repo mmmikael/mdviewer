@@ -43,6 +43,9 @@
   let error = $state<string | null>(null);
   /** Shown while a long document is read in parts. */
   let part = $state<{ index: number; count: number } | null>(null);
+  /** Set when reading the API key takes a moment, i.e. macOS is asking for keychain access. */
+  let keychainWait = $state(false);
+  let keychainTimer: ReturnType<typeof setTimeout> | undefined;
   /** Who wrote the summary, e.g. "OpenRouter · some/model". */
   let source = $state("");
   /** Hash of the document the shown summary was written from. */
@@ -101,6 +104,11 @@
     return providersPromise;
   }
 
+  function stopKeychainWait() {
+    clearTimeout(keychainTimer);
+    keychainWait = false;
+  }
+
   function cancelRequests() {
     run++;
     for (const id of requests) void ipc.aiCancel(id);
@@ -155,10 +163,17 @@
       try {
         await ipc.aiComplete(id, prompt.system, prompt.prompt, (message) => {
           if (token !== run) return;
+          if (message.type === "keychain") {
+            clearTimeout(keychainTimer);
+            keychainTimer = setTimeout(() => (keychainWait = true), 400);
+            return;
+          }
+          stopKeychainWait();
           if (message.type === "text") onText(message.text);
           else onNotice(message.text);
         });
       } finally {
+        stopKeychainWait();
         requests.delete(id);
       }
     };
@@ -236,6 +251,7 @@
 
   const meta = $derived.by(() => {
     if (status === "running") {
+      if (keychainWait) return "Waiting for keychain access… (choose Always Allow if macOS asks)";
       if (part && !text) return `Reading part ${part.index + 1} of ${part.count}…`;
       return text ? `Writing · ${source}` : `Reading · ${source}`;
     }

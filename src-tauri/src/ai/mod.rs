@@ -11,7 +11,7 @@ use std::sync::{Arc, Mutex};
 
 use serde::{Deserialize, Serialize};
 use tauri::ipc::Channel;
-use tauri::{AppHandle, State};
+use tauri::{AppHandle, Manager, State};
 use tokio::sync::Notify;
 
 use crate::settings;
@@ -42,6 +42,9 @@ pub struct AiSettings {
     pub instructions: Option<String>,
     /// Cloud providers the user agreed to send documents to.
     pub allowed: Vec<String>,
+    /// Keychain accounts that hold a saved key (names only, no secrets), so the
+    /// keychain is only asked when a key is really there and needed.
+    pub keys: Vec<String>,
 }
 
 impl Default for AiSettings {
@@ -51,19 +54,31 @@ impl Default for AiSettings {
             providers: BTreeMap::new(),
             instructions: None,
             allowed: Vec::new(),
+            keys: Vec::new(),
         }
     }
 }
 
-/// Requests that can still be cancelled, by the page's request id.
 #[derive(Default)]
-pub struct AiState(Mutex<HashMap<u32, Arc<Notify>>>);
+pub struct AiState {
+    /// Requests that can still be cancelled, by the page's request id.
+    requests: Mutex<HashMap<u32, Arc<Notify>>>,
+    /// Keys read from the keychain this session, so macOS asks at most once
+    /// per launch instead of once per request.
+    keys: Mutex<HashMap<String, String>>,
+}
 
 #[derive(Clone, Serialize)]
 #[serde(tag = "type", rename_all = "lowercase")]
 pub enum StreamMessage {
-    Text { text: String },
-    Notice { text: String },
+    /// About to read the key from the keychain, which may show a prompt.
+    Keychain,
+    Text {
+        text: String,
+    },
+    Notice {
+        text: String,
+    },
 }
 
 fn provider(id: &str) -> Result<&'static Provider, String> {
@@ -90,11 +105,43 @@ fn key_account(app: &AppHandle, p: &Provider) -> String {
     }
 }
 
+/// The saved key for a keychain account. Only asks the keychain when a key was
+/// saved and hasn't been read yet this session. Blocking.
+fn saved_key(
+    app: &AppHandle,
+    account: &str,
+    on_keychain: &dyn Fn(),
+) -> Result<Option<String>, String> {
+    // Held while reading, so parallel requests (parts of a long document) wait
+    // for one read instead of each making macOS ask.
+    let state = app.state::<AiState>();
+    let mut cache = state.keys.lock().unwrap();
+    if let Some(key) = cache.get(account) {
+        return Ok(Some(key.clone()));
+    }
+    if !settings::current(app).ai.keys.iter().any(|a| a == account) {
+        return Ok(None);
+    }
+    on_keychain();
+    match keychain::get(account)?.filter(|k| !k.is_empty()) {
+        Some(key) => {
+            cache.insert(account.to_string(), key.clone());
+            Ok(Some(key))
+        }
+        None => {
+            // Removed from the keychain by hand.
+            settings::set_key_saved(app, account, false);
+            Ok(None)
+        }
+    }
+}
+
 /// Resolves provider settings and the key. Blocking (keychain).
 fn endpoint(
     app: &AppHandle,
     id: &str,
     need_model: bool,
+    on_keychain: &dyn Fn(),
 ) -> Result<(Endpoint, &'static Provider), String> {
     let p = provider(id)?;
     let config = settings::current(app)
@@ -118,7 +165,7 @@ fn endpoint(
     if need_model && model.is_empty() {
         return Err(format!("Choose a model for {} in Settings.", p.name));
     }
-    let key = keychain::get(&key_account(app, p))?.filter(|k| !k.is_empty());
+    let key = saved_key(app, &key_account(app, p), on_keychain)?;
     if p.needs_key && key.is_none() {
         return Err(format!("Add your {} API key in Settings.", p.name));
     }
@@ -161,23 +208,31 @@ pub fn ai_providers() -> &'static [Provider] {
     providers::PROVIDERS
 }
 
-/// Whether a key is saved for the provider. The key itself never leaves Rust.
+/// Whether a key is saved for the provider, from settings: this never asks the
+/// keychain, and the key itself never leaves Rust.
 #[tauri::command]
-pub async fn ai_key_status(app: AppHandle, provider: String) -> Result<bool, String> {
-    let p = self::provider(&provider)?;
-    blocking(move || Ok(keychain::get(&key_account(&app, p))?.is_some_and(|k| !k.is_empty()))).await
+pub fn ai_key_status(app: AppHandle, provider: String) -> Result<bool, String> {
+    let account = key_account(&app, self::provider(&provider)?);
+    Ok(settings::current(&app).ai.keys.contains(&account))
 }
 
-/// Saves the provider's key; an empty key removes it.
+/// Saves the provider's key in the keychain; an empty key removes it.
 #[tauri::command]
 pub async fn ai_set_key(app: AppHandle, provider: String, key: String) -> Result<(), String> {
     let p = self::provider(&provider)?;
     blocking(move || {
         let account = key_account(&app, p);
-        match key.trim() {
-            "" => keychain::delete(&account),
-            key => keychain::set(&account, key),
+        let key = key.trim().to_string();
+        let keys = &app.state::<AiState>().keys;
+        if key.is_empty() {
+            keychain::delete(&account)?;
+            keys.lock().unwrap().remove(&account);
+        } else {
+            keychain::set(&account, &key)?;
+            keys.lock().unwrap().insert(account.clone(), key.clone());
         }
+        settings::set_key_saved(&app, &account, !key.is_empty());
+        Ok(())
     })
     .await
 }
@@ -185,7 +240,7 @@ pub async fn ai_set_key(app: AppHandle, provider: String, key: String) -> Result
 /// The provider's models, for the picker in Settings.
 #[tauri::command]
 pub async fn ai_models(app: AppHandle, provider: String) -> Result<Vec<ModelInfo>, String> {
-    let (endpoint, p) = blocking(move || endpoint(&app, &provider, false)).await?;
+    let (endpoint, p) = blocking(move || endpoint(&app, &provider, false, &|| {})).await?;
     let (status, body) = http::fetch(endpoint.models_request())
         .await
         .map_err(|e| network_error(p, &endpoint, e))?;
@@ -207,12 +262,12 @@ pub async fn ai_complete(
     on_message: Channel<StreamMessage>,
 ) -> Result<(), String> {
     let cancel = Arc::new(Notify::new());
-    state.0.lock().unwrap().insert(id, cancel.clone());
+    state.requests.lock().unwrap().insert(id, cancel.clone());
     let result = tokio::select! {
         result = complete(app, system, prompt, on_message) => result,
         _ = cancel.notified() => Err("Cancelled.".into()),
     };
-    state.0.lock().unwrap().remove(&id);
+    state.requests.lock().unwrap().remove(&id);
     result
 }
 
@@ -223,7 +278,13 @@ async fn complete(
     on_message: Channel<StreamMessage>,
 ) -> Result<(), String> {
     let id = settings::current(&app).ai.provider;
-    let (endpoint, p) = blocking(move || endpoint(&app, &id, true)).await?;
+    let channel = on_message.clone();
+    let (endpoint, p) = blocking(move || {
+        endpoint(&app, &id, true, &|| {
+            let _ = channel.send(StreamMessage::Keychain);
+        })
+    })
+    .await?;
     let mut rx = http::send(endpoint.chat_request(&system, &prompt))?;
 
     let mut status = 0;
@@ -263,7 +324,7 @@ async fn complete(
 
 #[tauri::command]
 pub fn ai_cancel(state: State<'_, AiState>, id: u32) {
-    if let Some(cancel) = state.0.lock().unwrap().get(&id) {
+    if let Some(cancel) = state.requests.lock().unwrap().get(&id) {
         cancel.notify_one();
     }
 }

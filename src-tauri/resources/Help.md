@@ -47,7 +47,7 @@ For long documents, such as the ones AI coding agents write, choose **View ▸ S
 Set it up in **MDViewer ▸ Settings… ▸ AI Summary**:
 
 - **Provider.** Use your own API key with OpenRouter (one key for models from many companies), OpenAI, Anthropic, Google Gemini, xAI Grok, Mistral, DeepSeek or Groq. Or run a model on this Mac with Ollama or LM Studio, so documents never leave it. **Custom** works with any other OpenAI- or Anthropic-compatible service.
-- **API key.** Stored in your keychain and only sent to that provider.
+- **API key.** Stored in your macOS keychain and only sent to that provider. MDViewer only goes to the keychain when you save a key or use it, so macOS may ask then to let it in: choose **Always Allow**. As MDViewer isn't signed by Apple, macOS asks again after each update.
 - **Model.** Pick one from the provider's list, or type its name.
 - **Instructions.** Describe what the summary should contain and how long it should be. MDViewer adds the document and the links to its sections.
 

@@ -62,6 +62,18 @@
     ...(provider ? settings.ai.providers[provider.id] : {}),
   });
   const selectedModel = $derived(models.find((m) => m.id === (config.model || provider?.defaultModel)));
+  /** What was saved about the chosen model, shown until the model list is loaded. */
+  const savedModel = $derived<AiModel | undefined>(
+    config.model
+      ? {
+          id: config.model,
+          name: null,
+          contextTokens: config.contextTokens,
+          promptPrice: config.promptPrice,
+          completionPrice: config.completionPrice,
+        }
+      : undefined,
+  );
   const instructions = $derived(settings.ai.instructions ?? DEFAULT_INSTRUCTIONS);
 
 
@@ -105,8 +117,13 @@
     await refreshProvider();
   }
 
-  /** Key status and model list for the selected provider. */
-  async function refreshProvider() {
+  /**
+   * Key status and model list for the selected provider. The model list is only
+   * fetched by itself when that needs no key: reading a saved key may make
+   * macOS ask for keychain access, so that waits until the user asks (focusing
+   * the model field, reloading, or just after saving the key).
+   */
+  async function refreshProvider(loadWithKey = false) {
     await tick();
     const current = provider;
     keyInput = "";
@@ -119,7 +136,12 @@
     if (current.id !== provider?.id) return;
     if (current.needsKey && !hasKey) return;
     if (current.editableUrl && !(config.baseUrl?.trim() || current.baseUrl)) return;
+    if (hasKey && !loadWithKey) return;
     await loadModels();
+  }
+
+  function onModelFocus() {
+    if (!models.length && !loadingModels && !modelsError) void loadModels();
   }
 
   async function loadModels() {
@@ -142,7 +164,7 @@
     keyError = null;
     try {
       await ipc.aiSetKey(provider.id, keyInput);
-      await refreshProvider();
+      await refreshProvider(true);
     } catch (error) {
       keyError = String(error);
     }
@@ -518,11 +540,19 @@
       </div>
       {#if keyError}
         <p class="error">{keyError}</p>
-      {:else if provider.keyUrl && hasKey === false}
+      {:else if hasKey}
         <p class="hint">
-          Get a key from <button type="button" class="link" onclick={() => void openUrl(provider!.keyUrl!)}
-            >{new URL(provider.keyUrl).host}</button
-          >. It’s stored in your keychain and only sent to {provider.name}.
+          When MDViewer first uses the key, macOS asks to let it into your keychain: choose Always Allow. As MDViewer
+          isn’t signed by Apple, macOS asks again after each update.
+        </p>
+      {:else if hasKey === false}
+        <p class="hint">
+          {#if provider.keyUrl}
+            Get a key from <button type="button" class="link" onclick={() => void openUrl(provider!.keyUrl!)}
+              >{new URL(provider.keyUrl).host}</button
+            >.
+          {/if}
+          MDViewer keeps it in your macOS keychain, which macOS may ask you to allow, and only sends it to {provider.name}.
         </p>
       {/if}
     {/if}
@@ -538,6 +568,7 @@
             spellcheck="false"
             placeholder={provider.defaultModel ?? (models.length ? "Choose a model" : "Model name")}
             value={config.model}
+            onfocus={onModelFocus}
             onchange={(e) => chooseModel(e.currentTarget.value)}
           />
           <button
@@ -563,8 +594,8 @@
         <p class="error">{modelsError}</p>
       {:else if loadingModels}
         <p class="hint">Loading models…</p>
-      {:else if modelHint(selectedModel)}
-        <p class="hint">{modelHint(selectedModel)}</p>
+      {:else if modelHint(selectedModel ?? savedModel)}
+        <p class="hint">{modelHint(selectedModel ?? savedModel)}</p>
       {:else if models.length}
         <p class="hint">{models.length} models available.</p>
       {/if}

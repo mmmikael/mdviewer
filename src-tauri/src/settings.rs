@@ -101,7 +101,25 @@ pub fn current(app: &AppHandle) -> Settings {
     app.state::<AppState>().settings.lock().unwrap().clone()
 }
 
-pub fn update(app: &AppHandle, settings: Settings) {
+pub fn update(app: &AppHandle, mut settings: Settings) {
+    // Which API keys are saved is only changed by `set_key_saved`, never by a
+    // page that may hold an older copy of the settings.
+    settings.ai.keys = current(app).ai.keys;
+    store(app, settings);
+}
+
+/// Notes whether the keychain holds a key for `account`, so the app knows
+/// without asking the keychain (which may show a permission prompt).
+pub fn set_key_saved(app: &AppHandle, account: &str, saved: bool) {
+    let mut settings = current(app);
+    settings.ai.keys.retain(|a| a != account);
+    if saved {
+        settings.ai.keys.push(account.to_string());
+    }
+    store(app, settings);
+}
+
+fn store(app: &AppHandle, settings: Settings) {
     let settings = settings.sanitized();
     *app.state::<AppState>().settings.lock().unwrap() = settings.clone();
     if let Ok(store) = app.store(STORE_FILE) {
