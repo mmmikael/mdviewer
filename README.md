@@ -38,13 +38,13 @@ Select a Markdown file in Finder and press the space bar:
 
 ### How it compares
 
-| | MDViewer | Marked 2 | Typora | MacDown |
+| | MDViewer | Marked 2 | Typora | [MacDown 3000](https://github.com/schuyler/macdown3000) |
 |---|---|---|---|---|
 | What it is | Viewer | Previewer | Editor | Editor with preview |
 | Price | Free | Paid | Paid | Free |
 | Open source | Yes | No | No | Yes |
 
-MDViewer is for reading: you write Markdown in your own editor (or let your tools write it) and read it here. If you'd rather edit in the same app, Typora or MacDown are good choices.
+MDViewer is for reading: you write Markdown in your own editor (or let your tools write it) and read it here. If you'd rather edit in the same app, Typora or MacDown 3000 (the maintained continuation of MacDown) are good choices.
 
 ### All features
 
