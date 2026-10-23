@@ -29,6 +29,7 @@ tauri-plugin-window-state = "~2.4"
 notify = "8.2.0"
 notify-debouncer-full = "0.7.0"
 dunce = "1.0.5"
+tokio = { version = "1", features = ["sync", "macros"] }
 
 
 # Read the optimization guideline for more details: https://tauri.app/concept/size/#cargo-configuration
@@ -47,4 +48,5 @@ objc2 = "0.6.5"
 objc2-app-kit = { version = "0.3.2", features = ["objc2-uniform-type-identifiers", "block2"] }
 objc2-foundation = "0.3.2"
 objc2-uniform-type-identifiers = "0.3.2"
+security-framework = "3"
 objc2-web-kit = { version = "0.3.2", features = ["WKWebView", "objc2-app-kit"] }

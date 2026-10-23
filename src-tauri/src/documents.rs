@@ -298,22 +298,31 @@ pub fn show_open_dialog(app: &AppHandle, prefer: Option<String>) {
 }
 
 pub fn show_settings_window(app: &AppHandle) {
+    show_settings_tab(app, None);
+}
+
+/// Opens Settings, on the given tab if it isn't open yet (the page remembers
+/// the last tab otherwise).
+pub fn show_settings_tab(app: &AppHandle, tab: Option<&str>) {
     if let Some(window) = app.get_webview_window(SETTINGS_LABEL) {
         focus(&window);
         return;
     }
     let theme = settings::current(app).window_theme();
-    let builder =
-        WebviewWindowBuilder::new(app, SETTINGS_LABEL, WebviewUrl::App("index.html".into()))
-            .title("Settings")
-            .inner_size(520.0, 400.0)
-            .resizable(false)
-            .minimizable(false)
-            .maximizable(false)
-            .theme(theme)
-            .on_navigation(is_app_url)
-            .visible(false)
-            .center();
+    let page = match tab {
+        Some(tab) => format!("index.html?tab={tab}"),
+        None => "index.html".into(),
+    };
+    let builder = WebviewWindowBuilder::new(app, SETTINGS_LABEL, WebviewUrl::App(page.into()))
+        .title("Settings")
+        .inner_size(520.0, 400.0)
+        .resizable(false)
+        .minimizable(false)
+        .maximizable(false)
+        .theme(theme)
+        .on_navigation(is_app_url)
+        .visible(false)
+        .center();
     #[cfg(target_os = "macos")]
     let builder = builder.tabbing_identifier("com.mmmikael.mdviewer.settings");
     if let Err(err) = builder.build() {

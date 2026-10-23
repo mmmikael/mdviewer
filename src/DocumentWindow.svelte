@@ -15,6 +15,7 @@
   import EmptyState from "./components/EmptyState.svelte";
   import FindBar from "./components/FindBar.svelte";
   import Sidebar from "./components/Sidebar.svelte";
+  import Tldr from "./components/Tldr.svelte";
   import { clipboardHtml, standaloneHtml } from "./lib/export";
   import { Finder } from "./lib/find";
   import {
@@ -73,6 +74,7 @@
   let scroller: HTMLElement;
   let article: HTMLElement;
   let findBar = $state<ReturnType<typeof FindBar>>();
+  let tldr = $state<ReturnType<typeof Tldr>>();
   let finder: Finder;
   let renderToken = 0;
   let toastTimer: ReturnType<typeof setTimeout> | undefined;
@@ -386,6 +388,13 @@
     }
   }
 
+  /** View ▸ Summarize: the TL;DR card sits at the top of the document. */
+  function summarize() {
+    if (!doc || !tldr) return;
+    scroller.scrollTo({ top: 0, behavior: "smooth" });
+    void tldr.summarize();
+  }
+
   function onMenuAction(action: MenuAction) {
     switch (action) {
       case "find":
@@ -423,6 +432,9 @@
         break;
       case "copy-rich":
         void copyRich();
+        break;
+      case "summarize":
+        summarize();
         break;
     }
   }
@@ -583,6 +595,21 @@
     {/if}
 
     <div class="scroller" bind:this={scroller} hidden={!doc} tabindex="-1" onscroll={onScroll}>
+      {#if doc}
+        <div class="tldr-column">
+          <Tldr
+            bind:this={tldr}
+            {doc}
+            {headings}
+            {settings}
+            onclick={onArticleClick}
+            onmousemove={onArticleMouseMove}
+            onmouseleave={() => showLinkStatus(null, false)}
+            onsavesettings={saveSettings}
+            ontoast={showToast}
+          />
+        </div>
+      {/if}
       <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_noninteractive_element_interactions -->
       <article
         class="markdown"
@@ -621,6 +648,23 @@
         <rect x="0.75" y="0.75" width="16.5" height="12.5" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.3" />
         <path d="M6.25 1v12" stroke="currentColor" stroke-width="1.3" />
         <path d="M2.5 4h2M2.5 6.25h2M2.5 8.5h2" stroke="currentColor" stroke-width="1.1" stroke-linecap="round" />
+      </svg>
+    </button>
+    <button
+      type="button"
+      class="icon-button summarize-button"
+      onclick={summarize}
+      title="Summarize (TL;DR)"
+      aria-label="Summarize"
+    >
+      <svg width="18" height="16" viewBox="0 0 18 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-linecap="round">
+        <path d="M1.5 3.5h7M1.5 7.5h5.5M1.5 11.5h7" stroke-width="1.3" />
+        <path
+          d="M13.5 4.5l.9 2.1 2.1.9-2.1.9-.9 2.1-.9-2.1-2.1-.9 2.1-.9z"
+          fill="currentColor"
+          stroke-width="0.8"
+          stroke-linejoin="round"
+        />
       </svg>
     </button>
   {/if}
@@ -707,6 +751,12 @@
     left: calc(var(--sidebar-width) - 38px);
   }
 
+  .summarize-button {
+    position: absolute;
+    top: calc(var(--controls-center, 26px) - 12px);
+    right: 12px;
+  }
+
   .banner {
     flex: none;
     padding: 6px 16px;
@@ -731,6 +781,17 @@
     max-width: var(--content-width);
     margin: 0 auto;
     padding: 24px 48px 96px;
+  }
+
+  /* Lines the summary card up with the text column. */
+  .tldr-column {
+    max-width: var(--content-width);
+    margin: 0 auto;
+    padding: 0 48px;
+  }
+
+  .tldr-column:empty {
+    display: none;
   }
 
   .drop-overlay {
@@ -778,6 +839,7 @@
     .toolbar,
     .banner,
     .sidebar-toggle,
+    .summarize-button,
     .link-status,
     .toast {
       display: none !important;

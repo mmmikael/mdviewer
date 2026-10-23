@@ -22,6 +22,7 @@ Each file opens in its own window. To get tabs instead, set **System Settings �
 | Open | ⌘O |
 | Find / next / previous | ⌘F / ⌘G / ⇧⌘G |
 | Toggle sidebar | ⌃⌘S |
+| Summarize (TL;DR) | ⇧⌘S |
 | Zoom in / out / actual size | ⌘= / ⌘− / ⌘0 |
 | Back / forward | ⌘[ / ⌘] |
 | Reload | ⌘R |
@@ -38,6 +39,19 @@ Each file opens in its own window. To get tabs instead, set **System Settings �
 - **Edit ▸ Copy as Rich Text** copies the selection, or the whole document when nothing is selected, so it pastes with its formatting into Mail, Pages, Google Docs or Slack. Math is pasted as TeX.
 
 Hover over a link to see where it goes in the bottom-left corner of the window. Hold ⌘ to open it in a new window.
+
+## AI summaries (TL;DR)
+
+For long documents, such as the ones AI coding agents write, choose **View ▸ Summarize** (⇧⌘S) or click the summary button at the top right of the window. A short summary appears above the document, with links to the sections it comes from. It's kept with the file, and if the file changes, the summary offers to update.
+
+Set it up in **MDViewer ▸ Settings… ▸ AI Summary**:
+
+- **Provider.** Use your own API key with OpenRouter (one key for models from many companies), OpenAI, Anthropic, Google Gemini, xAI Grok, Mistral, DeepSeek or Groq. Or run a model on this Mac with Ollama or LM Studio, so documents never leave it. **Custom** works with any other OpenAI- or Anthropic-compatible service.
+- **API key.** Stored in your keychain and only sent to that provider.
+- **Model.** Pick one from the provider's list, or type its name.
+- **Instructions.** Describe what the summary should contain and how long it should be. MDViewer adds the document and the links to its sections.
+
+A document is only sent when you ask for a summary, and MDViewer asks before the first time for each provider. Documents too long for the model are read in parts, then summarized from notes on each part.
 
 ## Quick Look
 

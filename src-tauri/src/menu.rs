@@ -117,6 +117,7 @@ pub fn build(app: &AppHandle) -> tauri::Result<Menu<Wry>> {
     )?;
 
     let toggle_sidebar = item("toggle-sidebar", "Toggle Sidebar", Some("CmdOrCtrl+Ctrl+S"))?;
+    let summarize = item("summarize", "Summarize (TL;DR)", Some("CmdOrCtrl+Shift+S"))?;
     let zoom_reset = item("zoom-reset", "Actual Size", Some("CmdOrCtrl+0"))?;
     let zoom_in = item("zoom-in", "Zoom In", Some("CmdOrCtrl+="))?;
     let zoom_out = item("zoom-out", "Zoom Out", Some("CmdOrCtrl+-"))?;
@@ -128,6 +129,7 @@ pub fn build(app: &AppHandle) -> tauri::Result<Menu<Wry>> {
         true,
         &[
             &toggle_sidebar,
+            &summarize,
             &sep()?,
             &zoom_reset,
             &zoom_in,
@@ -193,6 +195,7 @@ pub fn build(app: &AppHandle) -> tauri::Result<Menu<Wry>> {
             back,
             forward,
             toggle_sidebar,
+            summarize,
             zoom_reset,
             zoom_in,
             zoom_out,

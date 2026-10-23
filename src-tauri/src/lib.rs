@@ -1,3 +1,4 @@
+mod ai;
 mod commands;
 mod documents;
 mod export;
@@ -32,6 +33,7 @@ pub fn run() {
             std::thread::spawn(move || responder.respond(resources::handle(&request)));
         })
         .manage(Documents::default())
+        .manage(ai::AiState::default())
         .manage(watcher::Watchers::default())
         .manage(settings::AppState::default())
         .manage(menu::MenuState::default())
@@ -65,6 +67,12 @@ pub fn run() {
             commands::choose_editor_app,
             commands::get_default_viewer,
             commands::make_default_viewer,
+            ai::ai_providers,
+            ai::ai_key_status,
+            ai::ai_set_key,
+            ai::ai_models,
+            ai::ai_complete,
+            ai::ai_cancel,
         ])
         .build(tauri::generate_context!())
         .expect("error while building MDViewer");

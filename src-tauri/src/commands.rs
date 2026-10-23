@@ -27,16 +27,23 @@ pub fn show_window(app: AppHandle, window: WebviewWindow) {
 
 /// With `MDV_DEBUG_EXPORT_DIR` set (debug builds only), every exporter runs once
 /// for each document window, so exports can be checked without clicking.
+/// `MDV_DEBUG_SUMMARIZE` does the same for View ▸ Summarize, and
+/// `MDV_DEBUG_SETTINGS=general|ai` opens that Settings tab.
 fn debug_export(app: &AppHandle, window: &WebviewWindow) {
     #[cfg(debug_assertions)]
     {
         use tauri::{Emitter, Manager};
-        if std::env::var_os("MDV_DEBUG_EXPORT_DIR").is_some()
-            && app.state::<Documents>().path_for(window.label()).is_some()
-        {
+        let has_doc = app.state::<Documents>().path_for(window.label()).is_some();
+        if std::env::var_os("MDV_DEBUG_EXPORT_DIR").is_some() && has_doc {
             let _ = app.emit_to(window.label(), "menu:action", "export-html");
             let _ = app.emit_to(window.label(), "menu:action", "copy-rich");
             crate::export::export_pdf(app, window.clone());
+        }
+        if std::env::var_os("MDV_DEBUG_SUMMARIZE").is_some() && has_doc {
+            let _ = app.emit_to(window.label(), "menu:action", "summarize");
+        }
+        if let Ok(tab) = std::env::var("MDV_DEBUG_SETTINGS") {
+            documents::show_settings_tab(app, Some(&tab));
         }
     }
     #[cfg(not(debug_assertions))]

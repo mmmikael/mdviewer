@@ -23,6 +23,7 @@
 - **Live reload.** Keep it next to your editor, or next to the AI tool writing your docs: every save shows up right away, and you keep your place.
 - **Quick Look.** Press space on a `.md` file in Finder for a rendered preview, diagrams and math included.
 - **Renders what GitHub renders.** Tables, task lists, footnotes, alerts, front matter, syntax highlighting for 200+ languages, Mermaid diagrams, KaTeX math, and local images.
+- **TL;DR for long docs.** One click summarizes a document, with links to the sections it draws from, using the AI provider and model you choose: OpenRouter, OpenAI, Anthropic, Gemini, Grok and more with your own key, or a model running on your Mac with Ollama or LM Studio. The instructions are yours to edit.
 - **Share it.** Export as PDF or as a single self-contained HTML file, or copy as rich text to paste into Mail, Google Docs or Slack.
 - **Private and safe.** No accounts, no tracking. Documents can't run scripts, and the app only reads the files you open and the images they show.
 
@@ -60,6 +61,7 @@ Where MDViewer differs from MacDown 3000:
 - Opens `.md` files from Finder, the Dock, drag and drop, ⌘O, Open Recent and `open -a MDViewer file.md`; can be made the default app for Markdown from Settings
 - Find in page, zoom, back and forward between linked documents; hovering a link shows where it goes, like Safari
 - Print, Export as PDF, Export as HTML, Copy as Rich Text
+- AI summaries (View ▸ Summarize, ⇧⌘S): keys stay in the macOS keychain, documents are only sent when you ask (and the app asks first for each provider), long documents are read in parts, and summaries are kept with each file
 - Links to other Markdown files open in the app; links to websites open in your browser
 
 ## Install
@@ -94,8 +96,8 @@ Open a file at startup: `pnpm tauri dev -- -- "$PWD/tests/fixtures/rich.md"`. Fr
 
 | Script | What it does |
 |---|---|
-| `pnpm test` | Vitest: Markdown pipeline, sanitising, links, images, TOC, find |
-| `cargo test --manifest-path src-tauri/Cargo.toml` | Rust: document registry, file reading, settings, watcher matching |
+| `pnpm test` | Vitest: Markdown pipeline, sanitising, links, images, TOC, find, summary prompts |
+| `cargo test --manifest-path src-tauri/Cargo.toml` | Rust: document registry, file reading, settings, watcher matching, AI requests and streams |
 | `pnpm lint` | `svelte-check`, `cargo fmt --check`, `cargo clippy -D warnings` |
 | `pnpm tauri:build` | Release `.app` and `.dmg` for this Mac's architecture |
 | `pnpm tauri:build:universal` | Universal (Apple silicon + Intel) build; needs `rustup target add x86_64-apple-darwin` |
@@ -118,6 +120,8 @@ src/                       Web UI (Svelte 5 + TypeScript)
   SettingsWindow.svelte    Settings window
   lib/markdown/            markdown-it setup, Shiki, Mermaid, sanitising + DOM post-processing
   lib/export.ts            Standalone HTML export and rich-text clipboard HTML
+  lib/tldr.ts              AI summary prompts, splitting long documents, saved summaries
+  components/Tldr.svelte   The summary card above the document
   lib/ipc.ts               Typed wrappers for Rust commands and events
   quicklook/               Quick Look preview page (main.ts, bundled language subset)
   dev/mockTauri.ts         IPC mocks for running the UI in a browser
@@ -129,6 +133,7 @@ src-tauri/src/
   settings.rs              Settings and recent files (store plugin)
   export.rs                Export as PDF (WebKit print to file), save panel, rich-text clipboard
   platform.rs              AppKit bits: Dock recents, clipboard, traffic light position
+  ai/                      AI providers, streaming over NSURLSession, API keys in the keychain
 quicklook/                 Quick Look extension: Swift controller, Info.plist, build script
 tests/                     Vitest tests and Markdown fixtures
 ```
@@ -137,6 +142,7 @@ tests/                     Vitest tests and Markdown fixtures
 
 - **Versions are pinned to Tauri 2.11 / plugin 2.4–2.7** because newer plugin crates need Rust 1.90. Keep the JS packages (`@tauri-apps/*`) on the same minor versions as their Rust crates when upgrading.
 - **Title bar:** document windows get an empty unified `NSToolbar` (`platform.rs`), so macOS itself lays out a tall title bar and places the window buttons, as in Mail or Notes. The page asks for their position (`window_chrome`) and lines up its toolbar and sidebar button with them. (Moving the buttons by hand made them jump while resizing.)
+- **AI summaries:** the page builds the prompts, Rust adds the key and sends them through NSURLSession (no HTTP library in the app), streaming the reply back over a Tauri channel. Most providers speak the OpenAI chat-completions format; Anthropic gets its Messages format. Keys never reach the web view.
 - **Security:** documents are sanitised with DOMPurify, scripts never run, the web view can't navigate away from the app, and only folders of opened documents (or their git repository) are readable through the asset protocol. There is no `fs` or `shell` plugin.
 
 ## Releasing

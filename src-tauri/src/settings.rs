@@ -39,6 +39,7 @@ pub struct Settings {
     pub block_remote_images: bool,
     /// App used by File ▸ Open in Editor. `None` means the default text editor.
     pub editor_app: Option<String>,
+    pub ai: crate::ai::AiSettings,
 }
 
 impl Default for Settings {
@@ -50,6 +51,7 @@ impl Default for Settings {
             show_sidebar: true,
             block_remote_images: false,
             editor_app: None,
+            ai: Default::default(),
         }
     }
 }
