@@ -74,6 +74,16 @@ Where MDViewer differs from MacDown 3000:
 
 Requires macOS 13 or later.
 
+**With [Homebrew](https://brew.sh):**
+
+```bash
+brew install --cask mmmikael/tap/mdviewer
+```
+
+`brew upgrade` keeps it up to date.
+
+**Or download it:**
+
 1. Download the `.dmg` for your Mac from the [latest release](https://github.com/mmmikael/mdviewer/releases/latest):
    - **Apple silicon** (M1 and later): `MDViewer_<version>_aarch64.dmg`
    - **Intel:** `MDViewer_<version>_x64.dmg`
