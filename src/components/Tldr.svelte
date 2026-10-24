@@ -14,7 +14,7 @@
     estimateTokens,
     hashText,
     loadSummary,
-    maxDocumentChars,
+    maxRequestChars,
     saveSummary,
     summarize as writeSummary,
     type Complete,
@@ -43,6 +43,8 @@
   let error = $state<string | null>(null);
   /** Shown while a long document is read in parts. */
   let part = $state<{ index: number; count: number } | null>(null);
+  /** Round of merging notes, when the notes on all parts don't fit one request. */
+  let merging = $state<number | null>(null);
   /** Set when reading the API key takes a moment, i.e. macOS is asking for keychain access. */
   let keychainWait = $state(false);
   let keychainTimer: ReturnType<typeof setTimeout> | undefined;
@@ -80,6 +82,7 @@
       const saved = loadSummary(current);
       error = null;
       part = null;
+      merging = null;
       consent = null;
       if (saved) {
         text = saved.text;
@@ -155,6 +158,7 @@
     error = null;
     consent = null;
     part = null;
+    merging = null;
     source = `${provider.name} · ${model}`;
 
     const complete: Complete = async (prompt, onText, onNotice) => {
@@ -184,12 +188,13 @@
         source: doc.content,
         headings,
         instructions: ai.instructions,
-        maxChars: maxDocumentChars(config.contextTokens, provider.local),
+        maxChars: maxRequestChars(config.contextTokens, provider.local),
         concurrency: provider.local ? 1 : 3,
         complete,
         onProgress: (progress) => {
           if (token !== run) return;
           part = progress.parts ? { index: progress.part ?? 0, count: progress.parts } : null;
+          merging = progress.merging ?? null;
           text = progress.text;
           notice = progress.notice ?? null;
         },
@@ -226,6 +231,7 @@
   function stop() {
     cancelRequests();
     part = null;
+    merging = null;
     if (text.trim()) {
       notice = "Stopped before the summary was finished.";
       summaryHash = null;
@@ -252,6 +258,7 @@
   const meta = $derived.by(() => {
     if (status === "running") {
       if (keychainWait) return "Waiting for keychain access… (choose Always Allow if macOS asks)";
+      if (merging && !text) return `Combining notes on the parts (round ${merging})…`;
       if (part && !text) return `Reading part ${part.index + 1} of ${part.count}…`;
       return text ? `Writing · ${source}` : `Reading · ${source}`;
     }

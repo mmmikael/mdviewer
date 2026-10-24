@@ -19,7 +19,7 @@
     type ThemePref,
   } from "./lib/ipc";
   import { basename } from "./lib/paths";
-  import { DEFAULT_INSTRUCTIONS, maxDocumentChars } from "./lib/tldr";
+  import { DEFAULT_INSTRUCTIONS, maxRequestChars } from "./lib/tldr";
 
   let settings = $state<Settings>({ ...DEFAULT_SETTINGS });
   let defaultViewer = $state<DefaultViewer | null>(null);
@@ -619,7 +619,7 @@
       </div>
       <p class="hint">
         Longer documents are read in parts of about {(
-          Math.round(maxDocumentChars(config.contextTokens, provider.local) / 4 / 1000) * 1000
+          Math.round((maxRequestChars(config.contextTokens, provider.local) * 0.75) / 4 / 1000) * 1000
         ).toLocaleString()} tokens, then summarized from notes on each part.
       </p>
     {/if}
