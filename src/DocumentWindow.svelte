@@ -33,6 +33,7 @@
   import { renderMarkdown } from "./lib/markdown/render";
   import { linkStatus } from "./lib/linkStatus";
   import { basename, isMarkdownPath } from "./lib/paths";
+  import { captureAnchors, restoreAnchors } from "./lib/scrollAnchor";
   import { activeHeading, extractHeadings, type Heading } from "./lib/toc";
 
   const ZOOM_STEPS = [0.5, 0.67, 0.75, 0.8, 0.9, 1, 1.1, 1.25, 1.5, 1.75, 2, 2.5, 3];
@@ -128,8 +129,10 @@
     } else {
       const top = scroller.scrollTop;
       const atBottom = top > 0 && top + scroller.clientHeight >= scroller.scrollHeight - 4;
+      const anchors = top > 0 ? captureAnchors(article, scroller) : [];
       Idiomorph.morph(article, [...fragment.childNodes], { morphStyle: "innerHTML" });
-      scroller.scrollTop = atBottom ? scroller.scrollHeight : top;
+      if (atBottom) scroller.scrollTop = scroller.scrollHeight;
+      else if (!restoreAnchors(article, scroller, anchors)) scroller.scrollTop = top;
     }
 
     headings = extractHeadings(article);
