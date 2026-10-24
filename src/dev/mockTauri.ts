@@ -81,6 +81,33 @@ const models: AiModel[] = [
   { id: "mock/large", name: "Mock Large", contextTokens: 200000, promptPrice: 0.000003, completionPrice: 0.000015 },
 ];
 
+const DIAGRAM = `\`\`\`mermaid
+flowchart LR
+  A["Markdown file"] -->|"saved"| B["MDViewer"]
+  B --> C["Rendered page"]
+  B --> D["TL;DR card"]
+%% link: #rich-content Rendered page
+\`\`\`
+
+**Sections:** [Rich content](#rich-content)`;
+
+// `?diagram=mindmap` answers with a mind map instead.
+const MINDMAP = `\`\`\`mermaid
+mindmap
+  root((Rich content))
+    Rendering
+      Code and math
+      Diagrams
+    Live reload
+%% link: #rich-content Code and math
+%% link: #rich-content Diagrams
+\`\`\`
+
+**Sections:** [Rich content](#rich-content)`;
+
+// What a model might get wrong: unquoted parentheses in a label.
+const BAD_DIAGRAM = "```mermaid\nflowchart LR\n  A[Broken (label] --> B\n```";
+
 const SUMMARY = `- A **sample document** that shows what MDViewer renders: [tables](#rich-content), code, math and diagrams.
 - Live reload keeps the scroll position when the file changes.
 - Open question: whether to support [footnotes](#rich-content) in exports.`;
@@ -160,7 +187,12 @@ export function installMocks() {
           return (async () => {
             if (params.get("ai") === "fail") throw "OpenRouter didn’t accept the API key. Check it in Settings.";
             const channel = a.onMessage as Channel<AiMessage>;
-            for (const word of SUMMARY.split(/(?<= )/)) {
+            // `?ai=baddiagram` makes the first diagram invalid, to try the repair.
+            const diagram = String(a.system).includes("Mermaid diagram");
+            const repairing = String(a.prompt).includes("couldn't draw");
+            const good = params.get("diagram") === "mindmap" ? MINDMAP : DIAGRAM;
+            const reply = !diagram ? SUMMARY : params.get("ai") === "baddiagram" && !repairing ? BAD_DIAGRAM : good;
+            for (const word of reply.split(/(?<= )/)) {
               await new Promise((resolve) => setTimeout(resolve, 15));
               if (cancelled.has(a.id as number)) throw "Cancelled.";
               channel.onmessage({ type: "text", text: word });

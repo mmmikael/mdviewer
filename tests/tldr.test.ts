@@ -2,6 +2,9 @@ import { beforeEach, describe, expect, it } from "vitest";
 
 import {
   DEFAULT_INSTRUCTIONS,
+  diagramLinks,
+  diagramSource,
+  linkDiagramNodes,
   hashText,
   loadSummary,
   maxRequestChars,
@@ -200,6 +203,129 @@ describe("summarize", () => {
   });
 });
 
+describe("diagram summaries", () => {
+  const MAX = 3_000;
+  const valid = "```mermaid\nflowchart LR\n  A[\"Plan\"] --> B[\"Ship\"]\n```\n\n**Sections:** [Intro](#intro)";
+  const broken = "```mermaid\nflowchart LR\n  A[Plan (x] --> B\n```";
+  const check = async (summary: string) =>
+    diagramSource(summary)?.includes("(x") ? "Parse error on line 2" : diagramSource(summary) ? null : "no diagram";
+
+  it("asks for one Mermaid diagram with built-in instructions", () => {
+    const { system, prompt } = summaryPrompt("a.md", "# Intro\nx", headings, "Seven bullets.", "diagram");
+    expect(system).toContain("one Mermaid diagram");
+    expect(system).toContain("**Sections:**");
+    expect(prompt).toContain("flowchart");
+    expect(prompt).toContain("%% link: #rollout-plan Rollout plan");
+    expect(prompt).not.toContain("Seven bullets.");
+  });
+
+  it("finds the diagram in a reply", () => {
+    expect(diagramSource(valid)).toBe('flowchart LR\n  A["Plan"] --> B["Ship"]');
+    expect(diagramSource("- just a list")).toBeNull();
+  });
+
+  it("reads link comments from a diagram", () => {
+    const diagram = 'mindmap\n  root((Plan))\n    Rollout\n%% link: #rollout-plan Rollout\n  %%link: #q "Open questions"\n%% not a link';
+    expect(diagramLinks(diagram)).toEqual([
+      { anchor: "rollout-plan", label: "Rollout" },
+      { anchor: "q", label: "Open questions" },
+    ]);
+  });
+
+  it("links drawn nodes to existing sections only", () => {
+    const box = document.createElement("div");
+    box.innerHTML =
+      '<svg><g class="nodes">' +
+      '<g class="node"><rect></rect><g class="label"><text><tspan>Rollout</tspan><tspan>plan</tspan></text></g></g>' +
+      '<g class="node"><rect></rect><g class="label"><text>Risks</text></g></g>' +
+      '<g class="node"><rect></rect><g class="label"><text>Kafka</text></g></g>' +
+      "</g></svg>";
+    const count = linkDiagramNodes(
+      box,
+      [
+        { anchor: "rollout-plan", label: "Rollout plan" },
+        { anchor: "risks", label: "Risks" },
+        { anchor: "missing", label: "Kafka" },
+      ],
+      (id) => id !== "missing",
+    );
+    expect(count).toBe(2);
+    const links = [...box.querySelectorAll("a")];
+    expect(links.map((a) => a.getAttribute("href"))).toEqual(["#rollout-plan", "#risks"]);
+    // The whole node (shape and label) is inside the link.
+    expect(links[0].firstElementChild?.getAttribute("class")).toBe("node");
+    expect(links[0].dataset.link).toBe("anchor");
+    expect(box.textContent).toContain("Kafka");
+  });
+
+  it("asks once more when the diagram can't be drawn", async () => {
+    const log: Prompt[] = [];
+    let calls = 0;
+    const result = await summarize({
+      name: "a.md",
+      source: "# Intro\nshort",
+      headings,
+      style: "diagram",
+      check,
+      maxChars: MAX,
+      concurrency: 1,
+      complete: async (prompt, onText) => {
+        log.push(prompt);
+        onText(calls++ === 0 ? broken : valid);
+      },
+      onProgress: () => {},
+    });
+    expect(log.length).toBe(2);
+    expect(log[1].prompt).toContain("Parse error on line 2");
+    expect(log[1].prompt).toContain("A[Plan (x]");
+    expect(result.text).toBe(valid);
+    expect(result.invalid).toBeUndefined();
+    expect(log.every((p) => promptSize(p) <= MAX)).toBe(true);
+  });
+
+  it("gives up after one repair", async () => {
+    const log: Prompt[] = [];
+    const result = await summarize({
+      name: "a.md",
+      source: "# Intro\nshort",
+      headings,
+      style: "diagram",
+      check,
+      maxChars: MAX,
+      concurrency: 1,
+      complete: async (prompt, onText) => {
+        log.push(prompt);
+        onText(broken);
+      },
+      onProgress: () => {},
+    });
+    expect(log.length).toBe(2);
+    expect(result.invalid).toBe("Parse error on line 2");
+  });
+
+  it("only draws the diagram in the final request of a long document", async () => {
+    const log: Prompt[] = [];
+    const source = [1, 2, 3].map((n) => `# Part ${n}\n${"x".repeat(1_500)}`).join("\n");
+    await summarize({
+      name: "long.md",
+      source,
+      headings,
+      style: "diagram",
+      maxChars: MAX,
+      concurrency: 1,
+      complete: async (prompt, onText) => {
+        log.push(prompt);
+        onText(prompt.prompt.includes("<document_part") ? "- note" : valid);
+      },
+      onProgress: () => {},
+    });
+    const final = log.at(-1)!;
+    expect(final.system).toContain("one Mermaid diagram");
+    expect(final.system).toContain("notes taken on each part");
+    expect(log.slice(0, -1).every((p) => !p.system.includes("Mermaid"))).toBe(true);
+  });
+});
+
 describe("saved summaries", () => {
   beforeEach(() => localStorage.clear());
 
@@ -216,5 +342,13 @@ describe("saved summaries", () => {
     saveSummary("/a.md", null);
     expect(loadSummary("/a.md")).toBeNull();
     expect(loadSummary("/b.md")?.text).toBe("- b");
+  });
+
+  it("keeps lists and diagrams apart", () => {
+    const entry = { hash: "h", text: "- list", provider: "P", model: "m", at: 1 };
+    saveSummary("/a.md", entry);
+    saveSummary("/a.md", { ...entry, text: "diagram" }, "diagram");
+    expect(loadSummary("/a.md")?.text).toBe("- list");
+    expect(loadSummary("/a.md", "diagram")?.text).toBe("diagram");
   });
 });

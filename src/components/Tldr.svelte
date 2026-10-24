@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { untrack } from "svelte";
+  import { tick, untrack } from "svelte";
 
   import {
     EMPTY_PROVIDER_SETTINGS,
@@ -7,12 +7,17 @@
     type AiProvider,
     type Doc,
     type Settings,
+    type SummaryStyle,
   } from "../lib/ipc";
+  import { checkDiagram, renderDiagrams } from "../lib/markdown/mermaid";
   import { classifyLinks, sanitize } from "../lib/markdown/postprocess";
   import { renderMarkdown } from "../lib/markdown/render";
   import {
+    diagramLinks,
+    diagramSource,
     estimateTokens,
     hashText,
+    linkDiagramNodes,
     loadSummary,
     maxRequestChars,
     saveSummary,
@@ -48,6 +53,16 @@
   /** Set when reading the API key takes a moment, i.e. macOS is asking for keychain access. */
   let keychainWait = $state(false);
   let keychainTimer: ReturnType<typeof setTimeout> | undefined;
+  /** Style of the summary shown (the setting may change before it's rewritten). */
+  let shownStyle = $state<SummaryStyle>("list");
+  /** Set while a diagram Mermaid couldn't draw is being written again. */
+  let repairing = $state(false);
+  /** Why the diagram can't be drawn, when the repair didn't help either. */
+  let invalid = $state<string | null>(null);
+  let diagramBody = $state<HTMLElement>();
+  let drawToken = 0;
+  const darkQuery = window.matchMedia("(prefers-color-scheme: dark)");
+  let dark = $state(darkQuery.matches);
   /** Who wrote the summary, e.g. "OpenRouter · some/model". */
   let source = $state("");
   /** Hash of the document the shown summary was written from. */
@@ -59,31 +74,63 @@
   let providersPromise: Promise<AiProvider[]> | null = null;
 
   const path = $derived(doc.path);
+  const style = $derived<SummaryStyle>(settings.ai.style ?? "list");
   const hash = $derived(hashText(doc.content));
   const outdated = $derived(status === "done" && summaryHash !== null && summaryHash !== hash);
-  const html = $derived(renderSummary(text));
+  // Diagrams are drawn once complete; while one streams in, the placeholder shows.
+  const html = $derived(shownStyle === "list" ? renderSummary(text) : "");
 
-  function renderSummary(markdown: string): string {
-    if (!markdown) return "";
+  function summaryFragment(markdown: string): DocumentFragment {
     const fragment = sanitize(renderMarkdown(markdown));
     // A summary has no business loading images (they could be remote trackers).
     for (const img of fragment.querySelectorAll("img")) img.remove();
     classifyLinks(fragment, doc.dir);
+    return fragment;
+  }
+
+  function renderSummary(markdown: string): string {
+    if (!markdown) return "";
     const box = document.createElement("div");
-    box.append(fragment);
+    box.append(summaryFragment(markdown));
     return box.innerHTML;
   }
 
-  // A different file: stop, and show its saved summary if there is one.
+  async function drawDiagram(element: HTMLElement, markdown: string, theme: "light" | "dark") {
+    const token = ++drawToken;
+    const fragment = summaryFragment(markdown);
+    await renderDiagrams(fragment, theme);
+    linkDiagramNodes(fragment, diagramLinks(diagramSource(markdown) ?? ""), (id) => !!document.getElementById(id));
+    if (token === drawToken) element.replaceChildren(fragment);
+  }
+
+  $effect(() => {
+    if (shownStyle !== "diagram" || status !== "done" || !diagramBody) return;
+    const element = diagramBody;
+    const markdown = text;
+    const theme = dark ? "dark" : "light";
+    untrack(() => void drawDiagram(element, markdown, theme));
+  });
+
+  $effect(() => {
+    const onChange = () => (dark = darkQuery.matches);
+    darkQuery.addEventListener("change", onChange);
+    return () => darkQuery.removeEventListener("change", onChange);
+  });
+
+  // A different file or style: stop, and show the saved summary if there is one.
   $effect(() => {
     const current = path;
+    const currentStyle = style;
     untrack(() => {
       cancelRequests();
-      const saved = loadSummary(current);
+      const saved = loadSummary(current, currentStyle);
       error = null;
       part = null;
       merging = null;
+      repairing = false;
+      invalid = null;
       consent = null;
+      shownStyle = currentStyle;
       if (saved) {
         text = saved.text;
         notice = saved.notice ?? null;
@@ -152,6 +199,10 @@
     const token = ++run;
     const docPath = doc.path;
     const docHash = hash;
+    const runStyle = style;
+    shownStyle = runStyle;
+    repairing = false;
+    invalid = null;
     status = "running";
     text = "";
     notice = null;
@@ -188,6 +239,8 @@
         source: doc.content,
         headings,
         instructions: ai.instructions,
+        style: runStyle,
+        check: runStyle === "diagram" ? checkSummaryDiagram : undefined,
         maxChars: maxRequestChars(config.contextTokens, provider.local),
         concurrency: provider.local ? 1 : 3,
         complete,
@@ -195,6 +248,7 @@
           if (token !== run) return;
           part = progress.parts ? { index: progress.part ?? 0, count: progress.parts } : null;
           merging = progress.merging ?? null;
+          repairing = progress.repairing ?? false;
           text = progress.text;
           notice = progress.notice ?? null;
         },
@@ -202,20 +256,31 @@
       if (token !== run) return;
       if (!result.text.trim()) return fail(result.notice ?? "The model returned an empty summary.");
       summaryHash = docHash;
+      invalid = result.invalid ?? null;
       status = "done";
-      saveSummary(docPath, {
-        hash: docHash,
-        text: result.text,
-        notice: result.notice,
-        provider: provider.name,
-        model,
-        at: Date.now(),
-      });
+      saveSummary(
+        docPath,
+        { hash: docHash, text: result.text, notice: result.notice, provider: provider.name, model, at: Date.now() },
+        runStyle,
+      );
     } catch (e) {
       if (token !== run) return;
       cancelRequests();
       fail(String(e));
     }
+  }
+
+  async function checkSummaryDiagram(summary: string): Promise<string | null> {
+    const diagram = diagramSource(summary);
+    return diagram ? checkDiagram(diagram) : "The reply had no Mermaid diagram.";
+  }
+
+  /** The List / Diagram switch: shows the saved summary in that style, or writes one. */
+  async function setStyle(next: SummaryStyle) {
+    if (next === style) return;
+    onsavesettings({ ...settings, ai: { ...settings.ai, style: next } });
+    await tick();
+    if (status === "hidden") void summarize();
   }
 
   function openSettings() {
@@ -258,9 +323,11 @@
   const meta = $derived.by(() => {
     if (status === "running") {
       if (keychainWait) return "Waiting for keychain access… (choose Always Allow if macOS asks)";
+      if (repairing) return "Fixing the diagram…";
       if (merging && !text) return `Combining notes on the parts (round ${merging})…`;
       if (part && !text) return `Reading part ${part.index + 1} of ${part.count}…`;
-      return text ? `Writing · ${source}` : `Reading · ${source}`;
+      if (text) return `${shownStyle === "diagram" ? "Drawing" : "Writing"} · ${source}`;
+      return `Reading · ${source}`;
     }
     if (status === "confirm") return "Before you summarize";
     if (status === "error") return "Couldn’t summarize";
@@ -279,6 +346,18 @@
     <header>
       <span class="badge">TL;DR</span>
       <span class="meta" title={source}>{meta}</span>
+      <div class="styles" role="radiogroup" aria-label="Summary style">
+        {#each [["list", "List"], ["diagram", "Diagram"]] as [value, label] (value)}
+          <button
+            type="button"
+            role="radio"
+            aria-checked={style === value}
+            class:selected={style === value}
+            disabled={status === "running"}
+            onclick={() => void setStyle(value as SummaryStyle)}>{label}</button
+          >
+        {/each}
+      </div>
       <div class="actions">
         {#if status === "running"}
           <button type="button" class="icon-button" title="Stop" aria-label="Stop" onclick={stop}>
@@ -321,7 +400,10 @@
         <button type="button" class="push-button" onclick={() => summarize()}>Try Again</button>
       </div>
     {:else}
-      {#if html}
+      {#if shownStyle === "diagram" && status === "done"}
+        <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
+        <div class="markdown body diagram" bind:this={diagramBody} {onclick} {onmousemove} {onmouseleave}></div>
+      {:else if html}
         <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
         <div class="markdown body" {onclick} {onmousemove} {onmouseleave}>{@html html}</div>
       {:else}
@@ -329,6 +411,12 @@
       {/if}
       {#if notice}
         <p class="notice">{notice}</p>
+      {/if}
+      {#if invalid && status === "done"}
+        <p class="notice">
+          The model’s diagram couldn’t be drawn, even after a second try.
+          <button type="button" class="link" onclick={() => void setStyle("list")}>Show as a List</button>
+        </p>
       {/if}
       {#if outdated}
         <div class="outdated">
@@ -341,7 +429,10 @@
 {/if}
 
 <style>
+  /* The whole card (text, controls, diagram) zooms with the document. */
   .tldr {
+    zoom: var(--zoom, 1);
+    font-size: 13px;
     margin: 20px 0 4px;
     padding: 10px 14px 12px;
     border: 1px solid color-mix(in srgb, var(--accent) 22%, var(--hairline));
@@ -377,6 +468,53 @@
     white-space: nowrap;
   }
 
+  .styles {
+    flex: none;
+    display: inline-flex;
+    padding: 1px;
+    border-radius: 6px;
+    background: var(--hover);
+  }
+
+  .styles button {
+    border: 0;
+    background: transparent;
+    padding: 1px 8px;
+    border-radius: 5px;
+    font-size: 11px;
+    color: var(--text-secondary);
+  }
+
+  .styles button.selected {
+    background: var(--control-bg);
+    color: var(--text);
+    box-shadow: 0 0.5px 1.5px rgba(0, 0, 0, 0.2);
+  }
+
+  .styles button:disabled {
+    opacity: 0.6;
+  }
+
+  .body.diagram :global(.mermaid-diagram) {
+    margin: 4px 0 8px;
+  }
+
+  .body.diagram :global(a.diagram-link) {
+    cursor: pointer;
+  }
+
+  .body.diagram :global(a.diagram-link:hover) {
+    opacity: 0.75;
+  }
+
+  .link {
+    border: 0;
+    padding: 0;
+    background: none;
+    color: var(--accent);
+    font-size: inherit;
+  }
+
   .actions {
     display: flex;
     gap: 2px;
@@ -384,7 +522,7 @@
   }
 
   .body {
-    --md-font-size: calc(14px * var(--zoom, 1));
+    --md-font-size: 14px;
     margin-top: 6px;
   }
 

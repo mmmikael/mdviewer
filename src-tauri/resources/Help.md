@@ -44,12 +44,15 @@ Hover over a link to see where it goes in the bottom-left corner of the window. 
 
 For long documents, such as the ones AI coding agents write, choose **View ▸ Summarize** (⇧⌘S) or click the summary button at the top right of the window. A short summary appears above the document, with links to the sections it comes from. It's kept with the file, and if the file changes, the summary offers to update.
 
+Switch the summary between **List** and **Diagram** in its header. A diagram is a Mermaid flowchart, mind map or timeline of the whole document; click a node to jump to its section. If the model writes a diagram that can't be drawn, MDViewer asks it once to fix it.
+
 Set it up in **MDViewer ▸ Settings… ▸ AI Summary**:
 
 - **Provider.** Use your own API key with OpenRouter (one key for models from many companies), OpenAI, Anthropic, Google Gemini, xAI Grok, Mistral, DeepSeek or Groq. Or run a model on this Mac with Ollama or LM Studio, so documents never leave it. **Custom** works with any other OpenAI- or Anthropic-compatible service.
 - **API key.** Stored in your macOS keychain and only sent to that provider. MDViewer only goes to the keychain when you save a key or use it, so macOS may ask then to let it in: choose **Always Allow**, and it won't ask again.
 - **Model.** Pick one from the provider's list, or type its name.
-- **Instructions.** Describe what the summary should contain and how long it should be. MDViewer adds the document and the links to its sections.
+- **Summary style.** List or Diagram, used when you summarize a document for the first time.
+- **Instructions.** Describe what a list summary should contain and how long it should be. MDViewer adds the document and the links to its sections. Diagrams use built-in instructions.
 
 A document is only sent when you ask for a summary, and MDViewer asks before the first time for each provider. Documents too long for the model are read in parts, then summarized from notes on each part.
 

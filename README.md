@@ -23,7 +23,7 @@
 - **Live reload.** Keep it next to your editor, or next to the AI tool writing your docs: every save shows up right away, and you keep your place.
 - **Quick Look.** Press space on a `.md` file in Finder for a rendered preview, diagrams and math included.
 - **Renders what GitHub renders.** Tables, task lists, footnotes, alerts, front matter, syntax highlighting for 200+ languages, Mermaid diagrams, KaTeX math, and local images.
-- **TL;DR for long docs.** One click summarizes a document, with links to the sections it draws from, using the AI provider and model you choose: OpenRouter, OpenAI, Anthropic, Gemini, Grok and more with your own key, or a model running on your Mac with Ollama or LM Studio. The instructions are yours to edit.
+- **TL;DR for long docs.** One click summarizes a document, with links to the sections it draws from, as a list or as a Mermaid diagram of the whole document, using the AI provider and model you choose: OpenRouter, OpenAI, Anthropic, Gemini, Grok and more with your own key, or a model running on your Mac with Ollama or LM Studio. The instructions are yours to edit.
 - **Share it.** Export as PDF or as a single self-contained HTML file, or copy as rich text to paste into Mail, Google Docs or Slack.
 - **Private and safe.** No accounts, no tracking. Documents can't run scripts, and the app only reads the files you open and the images they show.
 
@@ -67,7 +67,7 @@ Where MDViewer differs from MacDown 3000:
 - Opens `.md` files from Finder, the Dock, drag and drop, ⌘O, Open Recent and `open -a MDViewer file.md`; can be made the default app for Markdown from Settings
 - Find in page, zoom, back and forward between linked documents; hovering a link shows where it goes, like Safari
 - Print, Export as PDF, Export as HTML, Copy as Rich Text
-- AI summaries (View ▸ Summarize, ⇧⌘S): keys stay in the macOS keychain, documents are only sent when you ask (and the app asks first for each provider), long documents are read in parts, and summaries are kept with each file
+- AI summaries (View ▸ Summarize, ⇧⌘S): keys stay in the macOS keychain, documents are only sent when you ask (and the app asks first for each provider), long documents are read in parts (notes are merged until they fit the model), summaries are kept with each file, and the List / Diagram switch draws a Mermaid diagram whose nodes link to their sections
 - Links to other Markdown files open in the app; links to websites open in your browser
 
 ## Install

@@ -30,8 +30,12 @@ export interface ProviderSettings {
   completionPrice: number | null;
 }
 
+export type SummaryStyle = "list" | "diagram";
+
 export interface AiSettings {
   provider: string;
+  /** Bullet points, or a Mermaid diagram. */
+  style: SummaryStyle;
   providers: Record<string, ProviderSettings>;
   /** The user's summary instructions; null uses the built-in ones. */
   instructions: string | null;
@@ -58,7 +62,7 @@ export const DEFAULT_SETTINGS: Settings = {
   showSidebar: true,
   blockRemoteImages: false,
   editorApp: null,
-  ai: { provider: "openrouter", providers: {}, instructions: null, allowed: [], keys: [] },
+  ai: { provider: "openrouter", style: "list", providers: {}, instructions: null, allowed: [], keys: [] },
 };
 
 export const EMPTY_PROVIDER_SETTINGS: ProviderSettings = {

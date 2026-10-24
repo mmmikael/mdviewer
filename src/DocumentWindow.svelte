@@ -783,8 +783,10 @@
     padding: 24px 48px 96px;
   }
 
-  /* Lines the summary card up with the text column. */
+  /* Lines the summary card up with the text column, at any zoom: the width is
+     in em of the document's (zoomed) font size, like the article's. */
   .tldr-column {
+    font-size: calc(15px * var(--zoom, 1));
     max-width: var(--content-width);
     margin: 0 auto;
     padding: 0 48px;

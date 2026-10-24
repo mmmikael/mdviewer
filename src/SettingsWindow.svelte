@@ -625,6 +625,27 @@
     {/if}
   </section>
 
+  <section>
+    <div class="row">
+      <span class="label">Summary style</span>
+      <div class="segmented" role="radiogroup" aria-label="Summary style">
+        {#each [["list", "List"], ["diagram", "Diagram"]] as [value, label] (value)}
+          <button
+            type="button"
+            role="radio"
+            aria-checked={settings.ai.style === value}
+            class:selected={settings.ai.style === value}
+            onclick={() => saveAi({ style: value as "list" | "diagram" })}>{label}</button
+          >
+        {/each}
+      </div>
+    </div>
+  </section>
+  <p class="hint section-hint">
+    A diagram shows the document’s shape at a glance as a Mermaid flowchart, mind map or timeline. You can switch
+    between them in the summary too.
+  </p>
+
   <section class="stack">
     <div class="row">
       <label class="label" for="ai-instructions">Instructions</label>
@@ -647,7 +668,8 @@
       oninput={(e) => saveInstructions(e.currentTarget.value)}
     ></textarea>
     <p class="hint">
-      What the summary should contain and how long it should be. MDViewer adds the document and links to its sections.
+      What a list summary should contain and how long it should be. MDViewer adds the document and links to its
+      sections. Diagrams use their own built-in instructions.
     </p>
   </section>
 
@@ -724,6 +746,10 @@
     font-size: 11px;
     line-height: 1.4;
     color: var(--text-secondary);
+  }
+
+  .section-hint {
+    margin: -8px 4px 0;
   }
 
   .stack .hint {

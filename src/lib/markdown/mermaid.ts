@@ -59,3 +59,14 @@ export async function renderDiagrams(root: ParentNode, theme: "light" | "dark"):
   // Keep the cache from growing without bound while editing diagrams live.
   while (cache.size > 200) cache.delete(cache.keys().next().value!);
 }
+
+/** Whether Mermaid can draw `source`: null if so, else its error message. */
+export async function checkDiagram(source: string): Promise<string | null> {
+  const m = await load(initializedFor ?? "light");
+  try {
+    await m.parse(source);
+    return null;
+  } catch (error) {
+    return String((error as Error)?.message ?? error);
+  }
+}

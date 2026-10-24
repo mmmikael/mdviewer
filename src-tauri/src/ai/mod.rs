@@ -33,10 +33,20 @@ pub struct ProviderSettings {
     pub completion_price: Option<f64>,
 }
 
+/// How the summary is written: bullet points, or a Mermaid diagram.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum SummaryStyle {
+    #[default]
+    List,
+    Diagram,
+}
+
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", default)]
 pub struct AiSettings {
     pub provider: String,
+    pub style: SummaryStyle,
     pub providers: BTreeMap<String, ProviderSettings>,
     /// The user's own summary instructions; `None` uses the built-in ones.
     pub instructions: Option<String>,
@@ -51,6 +61,7 @@ impl Default for AiSettings {
     fn default() -> Self {
         Self {
             provider: "openrouter".into(),
+            style: SummaryStyle::List,
             providers: BTreeMap::new(),
             instructions: None,
             allowed: Vec::new(),
@@ -353,6 +364,9 @@ mod tests {
     fn settings_without_ai_section_load() {
         let s: AiSettings = serde_json::from_str("{}").unwrap();
         assert_eq!(s.provider, "openrouter");
+        assert_eq!(s.style, SummaryStyle::List);
+        let s: AiSettings = serde_json::from_str(r#"{"style":"diagram"}"#).unwrap();
+        assert_eq!(s.style, SummaryStyle::Diagram);
         let s: AiSettings = serde_json::from_str(
             r#"{"provider":"custom","providers":{"custom":{"format":"anthropic","model":"m"}}}"#,
         )
