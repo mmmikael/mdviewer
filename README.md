@@ -79,7 +79,7 @@ Requires macOS 13 or later.
    - **Intel:** `MDViewer_<version>_x64.dmg`
    - **Not sure?** `MDViewer_<version>_universal.dmg` works on both, but is bigger. Apple menu ▸ About This Mac shows which chip you have.
 2. Open it and drag **MDViewer** to **Applications**.
-3. Open MDViewer. Releases aren't notarised by Apple yet, so the first time macOS blocks it: go to **System Settings ▸ Privacy & Security**, scroll down and click **Open Anyway**. You only need to do this once.
+3. Open MDViewer. Releases are signed and notarised by Apple, so it opens like any other app. (Versions before 0.3.1 weren't: macOS asked you to click **Open Anyway** in System Settings ▸ Privacy & Security.)
 4. To open Markdown files with MDViewer when you double-click them, choose **MDViewer ▸ Settings…** and click **Make Default**.
 
 ## Development

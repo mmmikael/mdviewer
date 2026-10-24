@@ -542,8 +542,8 @@
         <p class="error">{keyError}</p>
       {:else if hasKey}
         <p class="hint">
-          When MDViewer first uses the key, macOS asks to let it into your keychain: choose Always Allow. As MDViewer
-          isn’t signed by Apple, macOS asks again after each update.
+          When MDViewer first uses the key, macOS asks to let it into your keychain: choose Always Allow, and it
+          won’t ask again.
         </p>
       {:else if hasKey === false}
         <p class="hint">
