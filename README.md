@@ -3,13 +3,21 @@
 <h1 align="center">MDViewer</h1>
 
 <p align="center">
-  A fast, native Markdown viewer for macOS, with Quick Look previews, live reload, diagrams and math.<br>
-  Free and open source.
+  A fast, native Markdown viewer for macOS, made for the long docs coding agents write:<br>
+  live reload, one-key AI summaries, Quick Look previews, diagrams and math. Free and open source.
+</p>
+
+<p align="center">
+  <a href="https://github.com/mmmikael/mdviewer/releases/latest"><img src="https://img.shields.io/github/v/release/mmmikael/mdviewer?label=download&color=0a84ff" alt="Latest release"></a>
+  <img src="https://img.shields.io/badge/macOS-13%2B-555" alt="macOS 13 or later">
+  <img src="https://img.shields.io/badge/signed%20%26%20notarized-yes-2ea043" alt="Signed and notarized">
+  <a href="LICENSE"><img src="https://img.shields.io/github/license/mmmikael/mdviewer?color=555" alt="MIT license"></a>
 </p>
 
 <p align="center">
   <a href="https://github.com/mmmikael/mdviewer/releases/latest"><strong>Download for macOS</strong></a>
-  · Apple silicon and Intel · macOS 13 or later
+  · <a href="https://mmmikael.github.io/mdviewer/">Website</a>
+  · or <code>brew install --cask mmmikael/tap/mdviewer</code>
 </p>
 
 <picture>
@@ -26,6 +34,16 @@
 - **TL;DR for long docs.** One click summarizes a document, with links to the sections it draws from, as a list or as a Mermaid diagram of the whole document, using the AI provider and model you choose: OpenRouter, OpenAI, Anthropic, Gemini, Grok and more with your own key, or a model running on your Mac with Ollama or LM Studio. The instructions are yours to edit.
 - **Share it.** Export as PDF or as a single self-contained HTML file, or copy as rich text to paste into Mail, Google Docs or Slack.
 - **Private and safe.** No accounts, no tracking. Documents can't run scripts, and the app only reads the files you open and the images they show.
+
+### Made for reading what coding agents write
+
+Claude Code, Cursor, Codex and friends produce long plans, reports and design docs. Keep MDViewer open next to the agent: every save shows up right away, and ⇧⌘S gives you the TL;DR, as a list or a diagram, before you dive in.
+
+To have your agent open its documents for you, add a line like this to your `AGENTS.md` or `CLAUDE.md`:
+
+```markdown
+When you write or update a plan, report or other long Markdown document, open it for review with `open -a MDViewer <file>`.
+```
 
 ### Live reload
 

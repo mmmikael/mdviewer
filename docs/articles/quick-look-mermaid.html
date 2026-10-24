@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Rendering Mermaid inside a sandboxed Quick Look extension — MDViewer</title>
+    <meta
+      name="description"
+      content="How MDViewer's Quick Look extension renders Markdown, math and Mermaid diagrams: a web view in a Swift extension, one network permission, a single-file Mermaid build, and one copy shared with the app."
+    />
+    <link rel="canonical" href="https://mmmikael.github.io/mdviewer/articles/quick-look-mermaid.html" />
+    <link rel="icon" href="../images/icon.png" />
+    <meta property="og:type" content="article" />
+    <meta property="og:title" content="Rendering Mermaid inside a sandboxed Quick Look extension" />
+    <meta
+      property="og:description"
+      content="A web view in a Swift extension, one network permission, and one copy of Mermaid shared with the app."
+    />
+    <meta property="og:image" content="https://mmmikael.github.io/mdviewer/images/quicklook.png" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link rel="stylesheet" href="../site.css" />
+  </head>
+  <body>
+    <header class="wrap top">
+      <a class="brand" href="../"><img src="../images/icon.png" alt="" />MDViewer</a>
+      <nav>
+        <a href="../#articles">Articles</a>
+        <a href="https://github.com/mmmikael/mdviewer">GitHub</a>
+      </nav>
+    </header>
+
+    <main class="wrap narrow">
+      <article>
+        <h1>Rendering Mermaid inside a sandboxed Quick Look extension</h1>
+        <p class="meta">MDViewer · How it's built</p>
+
+        <p>
+          Press space on a Markdown file in Finder and MDViewer's Quick Look extension shows it rendered: highlighted
+          code, KaTeX math and Mermaid diagrams included. Mermaid is a large, JavaScript-heavy library, and Quick
+          Look extensions run in a strict sandbox. Someone asked how that works, so here are the parts that matter.
+        </p>
+
+        <img src="../images/quicklook.png" width="1180" height="870" alt="A Markdown file previewed with Quick Look in Finder" />
+
+        <h2>A small Swift extension that hosts a web view</h2>
+        <p>
+          The extension is a view-based Quick Look preview, a <code>QLPreviewingController</code>, written in a single
+          Swift file and compiled with <code>swiftc</code>, without an Xcode project. Its view is a
+          <code>WKWebView</code> that loads a preview page bundled inside the extension, with read access to that
+          folder only:
+        </p>
+        <pre><code>webView.loadFileURL(web.appendingPathComponent("preview.html"), allowingReadAccessTo: web)</code></pre>
+        <p>
+          When the page has loaded, Swift passes it the file's text and waits for rendering to finish before telling
+          Quick Look the preview is ready, so you never see a half-drawn page:
+        </p>
+        <pre><code>webView.callAsyncJavaScript(
+    "await window.mdvRender(source, baseDir)",
+    arguments: ["source": job.source, "baseDir": job.baseDir],
+    in: nil, in: .page
+) { [weak self] _ in self?.finish(nil) }</code></pre>
+        <p>
+          The page uses the same Markdown pipeline as the app (markdown-it, Shiki, KaTeX, DOMPurify), built by Vite as
+          one classic script, so previews match the app.
+        </p>
+
+        <h2>The sandbox needs one permission</h2>
+        <p>
+          JavaScript isn't the problem: a web view runs it in WebKit's own helper process. The catch is that this
+          process doesn't start inside a sandboxed extension unless the extension may open network connections. The
+          extension's entitlements are just these two:
+        </p>
+        <pre><code>&lt;key&gt;com.apple.security.app-sandbox&lt;/key&gt;      &lt;true/&gt;
+&lt;key&gt;com.apple.security.network.client&lt;/key&gt;  &lt;true/&gt;</code></pre>
+        <p>
+          The network permission also lets images from the web load. Navigation is locked down: only the preview page
+          itself may load, and links can't take the preview anywhere else.
+        </p>
+
+        <h2>Mermaid as one file, loaded only when needed</h2>
+        <p>
+          Modern Mermaid builds load their code in pieces (ES module chunks), which a sandboxed <code>file://</code>
+          page can't do. So the extension carries Mermaid's single-file build, <code>mermaid.min.js</code>, and the page
+          adds it as a plain script, only when the document actually contains a diagram:
+        </p>
+        <pre><code>const script = document.createElement("script");
+script.src = "mermaid.min.js";
+script.onload = () =&gt; resolve(globalThis.mermaid);
+document.head.append(script);</code></pre>
+        <p>
+          Documents without diagrams never load it. Mermaid runs at its <code>strict</code> security level, so a
+          diagram's text can't add scripts or click handlers.
+        </p>
+
+        <h2>One copy, shared with the app</h2>
+        <p>
+          The app needs Mermaid too, and at first it built its own copy into the program. Since the extension already
+          carries the single-file build, the app now loads that same file through a small custom URL scheme,
+          <code>mdvres://</code>, which serves an explicit list of files from inside the app bundle. That cut the
+          download noticeably:
+        </p>
+        <table>
+          <thead>
+            <tr><th>Download</th><th class="num">Before</th><th class="num">After</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Apple silicon DMG</td><td class="num">6.93 MB</td><td class="num">5.60 MB</td></tr>
+            <tr><td>Universal DMG</td><td class="num">11.55 MB</td><td class="num">8.88 MB</td></tr>
+          </tbody>
+        </table>
+
+        <h2>The one limit</h2>
+        <p>
+          Quick Look only lets the extension read the file being previewed. Images stored next to the document can't
+          load, so the preview shows their description instead. Diagrams and math come from the file's own text, so
+          they're unaffected. Very large files are cut at 5 MB.
+        </p>
+
+        <p class="note">
+          The code is MIT-licensed: see <code>quicklook/</code> and <code>src/quicklook/</code> in the
+          <a href="https://github.com/mmmikael/mdviewer">MDViewer repository</a>.
+          <a href="https://github.com/mmmikael/mdviewer/releases/latest">Download MDViewer</a> or install it with
+          <code>brew install --cask mmmikael/tap/mdviewer</code>.
+        </p>
+      </article>
+    </main>
+
+    <footer>
+      <div class="wrap">
+        <span>MDViewer is free and open source under the MIT license.</span>
+        <span><a href="../">Home</a> · <a href="https://github.com/mmmikael/mdviewer">GitHub</a></span>
+      </div>
+    </footer>
+  </body>
+</html>

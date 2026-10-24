@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>MDViewer — a fast, native Markdown viewer for macOS</title>
+    <meta
+      name="description"
+      content="Free, open-source Markdown viewer for macOS, made for the long docs coding agents write: live reload, one-key AI summaries (list or diagram), Quick Look previews, Mermaid diagrams and math. 6 MB, signed and notarized."
+    />
+    <link rel="canonical" href="https://mmmikael.github.io/mdviewer/" />
+    <link rel="icon" href="images/icon.png" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="MDViewer — a fast, native Markdown viewer for macOS" />
+    <meta
+      property="og:description"
+      content="Live reload, one-key AI summaries, Quick Look previews, Mermaid diagrams and math. Free and open source."
+    />
+    <meta property="og:url" content="https://mmmikael.github.io/mdviewer/" />
+    <meta property="og:image" content="https://mmmikael.github.io/mdviewer/images/social-preview.png" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link rel="stylesheet" href="site.css" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "SoftwareApplication",
+        "name": "MDViewer",
+        "operatingSystem": "macOS 13 or later",
+        "applicationCategory": "DeveloperApplication",
+        "description": "A fast, native Markdown viewer for macOS with live reload, AI summaries, Quick Look previews, Mermaid diagrams and math.",
+        "url": "https://mmmikael.github.io/mdviewer/",
+        "downloadUrl": "https://github.com/mmmikael/mdviewer/releases/latest",
+        "license": "https://opensource.org/licenses/MIT",
+        "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" }
+      }
+    </script>
+  </head>
+  <body>
+    <header class="wrap top">
+      <a class="brand" href="./"><img src="images/icon.png" alt="" />MDViewer</a>
+      <nav>
+        <a href="#features" class="hide-narrow">Features</a>
+        <a href="#agents" class="hide-narrow">For agents</a>
+        <a href="#articles">Articles</a>
+        <a href="https://github.com/mmmikael/mdviewer">GitHub</a>
+      </nav>
+    </header>
+
+    <main>
+      <div class="wrap hero">
+        <img class="icon" src="images/icon.png" alt="MDViewer icon" />
+        <h1>Read what your coding agent writes</h1>
+        <p class="lead">
+          A fast, native Markdown viewer for macOS. Live reload, one-key AI summaries, Quick Look previews, diagrams
+          and math. Free and open source.
+        </p>
+        <div class="actions">
+          <a class="button" href="https://github.com/mmmikael/mdviewer/releases/latest">Download for macOS</a>
+          <button class="brew" type="button" title="Copy" onclick="copyBrew(this)">
+            <span>brew install --cask mmmikael/tap/mdviewer</span>
+          </button>
+        </div>
+        <p class="small">Apple silicon and Intel · macOS 13 or later · 6 MB · signed and notarized by Apple</p>
+        <img
+          class="shot"
+          src="images/tldr.webp"
+          width="960"
+          height="651"
+          alt="MDViewer scrolls through a long agent-written plan, then a TL;DR card streams in with bullet points that link to the sections they come from"
+        />
+      </div>
+
+      <section id="features">
+        <div class="wrap">
+          <h2>Everything a long Markdown file needs</h2>
+          <p class="intro">
+            Opens straight to the rendered page, keeps up with every save, and tells you what's in it before you
+            read it all.
+          </p>
+          <div class="grid">
+            <div class="card">
+              <h3>One-key TL;DR</h3>
+              <p>
+                ⇧⌘S summarizes the document as a list or a Mermaid diagram, with links to the sections each point
+                comes from.
+              </p>
+            </div>
+            <div class="card">
+              <h3>Your model, your key</h3>
+              <p>
+                OpenRouter, OpenAI, Anthropic, Gemini, Grok, Mistral, DeepSeek or Groq, or fully local with Ollama
+                and LM Studio.
+              </p>
+            </div>
+            <div class="card">
+              <h3>Live reload</h3>
+              <p>Every save shows up right away, and you keep your place in the document.</p>
+            </div>
+            <div class="card">
+              <h3>Quick Look</h3>
+              <p>Press space on a <code>.md</code> file in Finder for a rendered preview, diagrams and math included.</p>
+            </div>
+            <div class="card">
+              <h3>Renders what GitHub renders</h3>
+              <p>
+                Tables, task lists, alerts, footnotes, front matter, 200+ languages, Mermaid diagrams and KaTeX math.
+              </p>
+            </div>
+            <div class="card">
+              <h3>Private and small</h3>
+              <p>
+                No account, no tracking. Keys stay in the macOS keychain, and documents are only sent when you ask.
+                A 6 MB download.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="live">
+        <div class="wrap split">
+          <div>
+            <h2>Keeps up with every save</h2>
+            <p class="intro">
+              Leave it open next to your editor or your agent. Text, checkboxes, tables and diagrams update as the
+              file changes, without losing your place.
+            </p>
+          </div>
+          <img
+            src="images/live-reload.gif"
+            width="800"
+            height="612"
+            loading="lazy"
+            alt="A checklist updating in MDViewer as the file is saved"
+          />
+        </div>
+      </section>
+
+      <section id="agents">
+        <div class="wrap">
+          <h2>Made for agent workflows</h2>
+          <p class="intro">
+            Claude Code, Cursor and Codex write long plans and reports. Add one line to your
+            <code>AGENTS.md</code> or <code>CLAUDE.md</code> and your agent opens them in MDViewer for review:
+          </p>
+          <pre><code>When you write or update a plan, report or other long Markdown document,
+open it for review with `open -a MDViewer &lt;file&gt;`.</code></pre>
+          <p class="small">
+            Long documents are read in parts and summarized from notes, so even a small local model can summarize a
+            2 MB log.
+          </p>
+        </div>
+      </section>
+
+      <section id="quicklook">
+        <div class="wrap split">
+          <img
+            src="images/quicklook.png"
+            width="1180"
+            height="870"
+            loading="lazy"
+            alt="Quick Look preview of a Markdown document rendered by MDViewer"
+          />
+          <div>
+            <h2>Previews right in Finder</h2>
+            <p class="intro">
+              Select a Markdown file and press space: code, math and Mermaid diagrams render in Quick Look, from the
+              same engine as the app.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section id="articles">
+        <div class="wrap">
+          <h2>How it's built</h2>
+          <p class="intro">MDViewer is built with Tauri 2 (Rust) and Svelte. Two write-ups on the tricky parts:</p>
+          <div class="grid articles">
+            <a href="articles/summarizing-huge-docs.html"
+              >Summarizing a 2 MB agent log on an 8K-token local model
+              <span>Budgeting every request, merging notes in rounds, and diagrams whose nodes link to sections.</span></a
+            >
+            <a href="articles/quick-look-mermaid.html"
+              >Rendering Mermaid inside a sandboxed Quick Look extension
+              <span>A web view in a Swift extension, one network permission, and one shared copy of Mermaid.</span></a
+            >
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <div class="wrap">
+        <span>MDViewer is free and open source under the MIT license.</span>
+        <span
+          ><a href="https://github.com/mmmikael/mdviewer">GitHub</a> ·
+          <a href="https://github.com/mmmikael/mdviewer/blob/main/CHANGELOG.md">Changelog</a> ·
+          <a href="https://github.com/mmmikael/mdviewer/issues/new/choose">Report a bug</a></span
+        >
+      </div>
+    </footer>
+
+    <script>
+      function copyBrew(button) {
+        const text = button.textContent.trim();
+        navigator.clipboard?.writeText(text).then(() => {
+          button.title = "Copied";
+          button.style.borderColor = "var(--accent)";
+        });
+      }
+    </script>
+  </body>
+</html>

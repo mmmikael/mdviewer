@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Summarizing a 2 MB agent log on an 8K-token local model — MDViewer</title>
+    <meta
+      name="description"
+      content="How MDViewer's TL;DR keeps every request within a model's context: budgeting prompts, reading long documents in parts, merging notes in rounds, and Mermaid diagram summaries whose nodes link to sections."
+    />
+    <link rel="canonical" href="https://mmmikael.github.io/mdviewer/articles/summarizing-huge-docs.html" />
+    <link rel="icon" href="../images/icon.png" />
+    <meta property="og:type" content="article" />
+    <meta property="og:title" content="Summarizing a 2 MB agent log on an 8K-token local model" />
+    <meta
+      property="og:description"
+      content="Budgeting every request, merging notes in rounds, and diagrams whose nodes link to sections."
+    />
+    <meta property="og:image" content="https://mmmikael.github.io/mdviewer/images/social-preview.png" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link rel="stylesheet" href="../site.css" />
+  </head>
+  <body>
+    <header class="wrap top">
+      <a class="brand" href="../"><img src="../images/icon.png" alt="" />MDViewer</a>
+      <nav>
+        <a href="../#articles">Articles</a>
+        <a href="https://github.com/mmmikael/mdviewer">GitHub</a>
+      </nav>
+    </header>
+
+    <main class="wrap narrow">
+      <article>
+        <h1>Summarizing a 2 MB agent log on an 8K-token local model</h1>
+        <p class="meta">MDViewer · How it's built</p>
+
+        <p>
+          MDViewer's TL;DR (⇧⌘S) summarizes the Markdown file you're reading, with any provider: a cloud model with
+          your own key, or a local one through Ollama or LM Studio. Cloud models have huge context windows; a local
+          model may have 8,000 tokens. Coding agents happily write documents far larger than that. Here's how the
+          summary stays correct at both ends.
+        </p>
+
+        <img src="../images/tldr.webp" width="960" height="651" alt="A TL;DR streaming in above a long agent-written plan" />
+
+        <h2>Budget the whole request, not just the document</h2>
+        <p>
+          Every request is measured in characters against a budget derived from the model's context window: the
+          window minus room for the reply, at a conservative 3.5 characters per token (code and non-English text use
+          more tokens than prose). For an 8,192-token model that's about 15,300 characters, and it covers
+          <em>everything</em> sent: the instructions to the model, your own summary instructions, the document, and
+          the list of section anchors the model may link to.
+        </p>
+        <p>
+          That last part is easy to forget. A long agent log can have thousands of headings, and the section list goes
+          into every request. It gets at most 20% of the budget: if all levels don't fit, the deepest level is dropped,
+          then the next, and finally the list ends with "… and N more sections".
+        </p>
+
+        <h2>Read in parts, then merge the notes in rounds</h2>
+        <p>
+          If the document doesn't fit in one request, it's split at headings (never inside code blocks) into parts
+          that do. The model takes short notes on each part, keeping the anchor of the section each note comes from,
+          and is asked for a word count chosen so that all the notes should fit in the final request.
+        </p>
+        <p>
+          Models don't always listen. A reader pointed out that the first version then sent every note in one final
+          request, with no size check. Local servers usually don't fail when that overflows: they quietly drop part of
+          the input, and the summary just misses things. So the notes are now merged in rounds:
+        </p>
+        <ol>
+          <li>If all the notes fit the final request, write the summary.</li>
+          <li>Otherwise, group consecutive notes into batches that each fit one request, and merge each batch into
+            shorter notes, keeping the section anchors.</li>
+          <li>Repeat. After four rounds, cut each note to fit instead of looping forever on a model that won't
+            shorten anything.</li>
+        </ol>
+        <p>A test runs this on a 2 MB log with an 8K-token budget and a deliberately long-winded fake model:</p>
+        <table>
+          <thead>
+            <tr><th></th><th class="num">Before</th><th class="num">After</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Parts read</td><td class="num">182</td><td class="num">182</td></tr>
+            <tr><td>Merge requests</td><td class="num">—</td><td class="num">16, in one round</td></tr>
+            <tr><td>Final request</td><td class="num">≈205,000 characters</td><td class="num">13,121 characters</td></tr>
+            <tr><td>Largest request (budget 15,303)</td><td class="num">≈205,000</td><td class="num">14,834</td></tr>
+          </tbody>
+        </table>
+        <p>The test suite checks that no request ever exceeds the budget, including with a model that never shortens its notes.</p>
+
+        <h2>A summary as a diagram</h2>
+        <p>
+          Another reader asked whether summaries keep Mermaid diagrams. They do now, in a way: the summary card has a
+          List / Diagram switch, and a diagram summary is one Mermaid flowchart, mind map or timeline of the whole
+          document. The model picks the type and keeps it to about 15 nodes with short, quoted labels.
+        </p>
+        <p>
+          Models write invalid Mermaid sometimes, especially small ones. Each diagram goes through Mermaid's own
+          parser first; if it fails, the model gets one retry with the exact error, and if that fails too the card
+          shows the error and offers the list instead.
+        </p>
+
+        <h2>Diagram nodes that link to sections</h2>
+        <p>
+          Mermaid can make nodes clickable, but only at a looser security level that would let a model's output run
+          code. Instead, the model adds a comment for each node that matches a section, which Mermaid ignores when
+          drawing:
+        </p>
+        <pre><code>flowchart TD
+  P["Proposal: restartPolicy Always on initContainers"]
+  ...
+%% link: #proposal Proposal: restartPolicy Always on initContainers</code></pre>
+        <p>
+          After drawing, MDViewer finds the node with that label and wraps it in an ordinary in-page link, only if the
+          anchor exists in the document. Clicks and hover previews then work like any other link. On three long design
+          documents (Go's type parameters proposal, the Kubernetes sidecar containers KEP and React's Server Components
+          RFC), all 32 links the model wrote pointed to real sections and real nodes.
+        </p>
+
+        <h2>Keys never reach the page</h2>
+        <p>
+          The page builds the prompts; the Rust side adds the API key from the macOS keychain and sends the request
+          through macOS's own networking, streaming the reply back. Keys never reach the web view, and a document is
+          only sent when you ask for a summary.
+        </p>
+
+        <p class="note">
+          The code is MIT-licensed: see <code>src/lib/tldr.ts</code> and <code>src-tauri/src/ai/</code> in the
+          <a href="https://github.com/mmmikael/mdviewer">MDViewer repository</a>.
+          <a href="https://github.com/mmmikael/mdviewer/releases/latest">Download MDViewer</a> or install it with
+          <code>brew install --cask mmmikael/tap/mdviewer</code>.
+        </p>
+      </article>
+    </main>
+
+    <footer>
+      <div class="wrap">
+        <span>MDViewer is free and open source under the MIT license.</span>
+        <span><a href="../">Home</a> · <a href="https://github.com/mmmikael/mdviewer">GitHub</a></span>
+      </div>
+    </footer>
+  </body>
+</html>
