@@ -87,6 +87,9 @@ jobs:
     needs: [test, create-release]
     if: ${{ !failure() && !cancelled() && (startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch') }}
     runs-on: macos-latest
+    # Notarisation normally takes minutes, but Apple sometimes holds a
+    # submission for hours; fail instead, so the job can be rerun.
+    timeout-minutes: 90
     permissions:
       contents: write
     strategy:
